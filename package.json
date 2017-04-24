@@ -1,0 +1,42 @@
+{
+  "name": "@nike/lambda-router",
+  "version": "0.0.1",
+  "description": "A router to simplify AWS Lambda Functions.",
+  "main": "src/index.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "style": "standard \"src/**/*.js\" | snazzy",
+    "style:fix": "standard \"src/**/*.js\" --fix",
+    "blue-tape": "nyc --check-coverage --lines 100 blue-tape test/**/**.spec.js | ./node_modules/.bin/tap-spec",
+    "report": "nyc report --reporter=html",
+    "test": "npm run style && npm run blue-tape && npm run report",
+    "test:watch": "npm run test -s & ./node_modules/.bin/chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"./node_modules/.bin/blue-tape test/**/**.spec.js | node_modules/.bin/tap-spec\"",
+    "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@git.nike.net:NextGenPlatforms/lambda-router.git"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "router"
+  ],
+  "author": "Kevin Ninnemann",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "co": "^4.6.0"
+  },
+  "devDependencies": {
+    "jsdoc": "^3.4.3",
+    "blue-tape": "^0.2.0",
+    "expect": "1.20.2",
+    "aws-sdk": "^2.4.8",
+    "nyc": "latest",
+    "snazzy": "^5.0.0",
+    "standard": "8.1.0",
+    "tap-spec": "^4.1.1"
+  }
+}
