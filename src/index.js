@@ -2,7 +2,11 @@
 
 const co = require('co')
 
-module.exports = function Router (options) {
+module.exports = function (options) {
+  return new Router(options || {})
+}
+
+function Router (options) {
   this.routes = []
   this.debug = options.debug
 }
