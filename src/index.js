@@ -47,7 +47,8 @@ Router.prototype.log = function () {
 
 function getRoute (self, event) {
   let route = self.routes.find(route => {
-    return (event.path === route.path || event.resourcePath === route.path) && event.method === route.method
+    return (event.path === route.path || event.resourcePath === route.path) &&
+      (event.method === route.method || event.httpMethod === route.method)
   })
 
   return route || self.unknownRoute || { handler: defaultUnknownRoute }
