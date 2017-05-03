@@ -47,7 +47,7 @@ Router.prototype.log = function () {
 
 function getRoute (self, event) {
   let route = self.routes.find(route => {
-    return (event.resource === route.path || event.resourcePath === route.path) &&
+    return (event.resource === route.path || event.resourcePath === route.path || event.path === route.path) &&
       (event.method === route.method || event.httpMethod === route.method)
   })
 
