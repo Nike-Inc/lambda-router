@@ -49,17 +49,20 @@ function getRoute (self, event) {
   const method = event.method || event.httpMethod
   const eventPath = event.resource || event.resourcePath || event.path
 
-  const route = self.routes.find(route => {
-    return doesPathMatch(eventPath, route) && method === route.method
+  let route = self.routes.find(route => {
+    return eventPath === route.path && method === route.method
   })
+
+  if (!route) {
+    route = self.routes.find(route => {
+      return doPathPartsMatch(eventPath, route) && method === route.method
+    })
+  }
 
   return route || self.unknownRoute || { handler: defaultUnknownRoute }
 }
 
-function doesPathMatch (eventPath, route) {
-  // Confirm fast if they're a direct match
-  if (eventPath === route.path) return true
-
+function doPathPartsMatch (eventPath, route) {
   const eventPathParts = eventPath.split('/')
   const routePathParts = route.path.split('/')
 
