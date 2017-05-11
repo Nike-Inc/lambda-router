@@ -12,7 +12,7 @@ function Router (options) {
 }
 
 Router.prototype.addRoute = function (httpMethod, path, handler) {
-  this.routes.push({method: httpMethod, path: path, handler: handler})
+  this.routes.push({method: httpMethod, path: path, handler: handler, isRegex: (path instanceof RegExp)})
 }
 
 function wrapRoute (httpMethod, args) {
@@ -46,12 +46,43 @@ Router.prototype.log = function () {
 }
 
 function getRoute (self, event) {
-  let route = self.routes.find(route => {
-    return (event.resource === route.path || event.resourcePath === route.path || event.path === route.path) &&
-      (event.method === route.method || event.httpMethod === route.method)
+  const method = event.method || event.httpMethod
+  const eventPath = event.resource || event.resourcePath || event.path
+
+  const route = self.routes.find(route => {
+    return doesPathMatch(eventPath, route) && method === route.method
   })
 
   return route || self.unknownRoute || { handler: defaultUnknownRoute }
+}
+
+function doesPathMatch (eventPath, route) {
+  // Confirm fast if they're a direct match
+  if (eventPath === route.path) return true
+
+  const eventPathParts = eventPath.split('/')
+  const routePathParts = route.path.split('/')
+
+  // Fail fast if they're not the same length
+  if (eventPathParts.length !== routePathParts.length) return false
+
+  // Start with 1 because the url should always start with the first back slash
+  for(let i = 1; i < eventPathParts.length; ++i){
+    const pathPart = eventPathParts[i]
+    const routePart = routePathParts[i]
+
+    // If the part is a curly braces value
+    if (routePart.search(/\{([a-z0-9]+)}/g) !== -1) {
+      continue
+    }
+
+    // Fail fast if a part doesn't match
+    if (routePart !== pathPart) {
+      return false
+    }
+  }
+
+  return true
 }
 
 function defaultUnknownRoute (event) {

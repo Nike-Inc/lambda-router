@@ -51,8 +51,8 @@ test('Assert that route matches on the GET handler', t => {
   const getHandler = () => t.pass('Handler called')
   const postHandler = () => t.fail('Wrong handler called')
 
-  router.get('/get', getHandler)
   router.post('/post', postHandler)
+  router.get('/get', getHandler)
 
   router.route({ resourcePath: '/get', method: 'GET' }, {}).then(() => {
     t.end()
@@ -68,6 +68,32 @@ test('Assert that route matches on the method if the path are the same', t => {
   router.post('/get', postHandler)
 
   router.route({ resourcePath: '/get', method: 'GET' }, {}).then(() => {
+    t.end()
+  })
+})
+
+test('Assert that route matches on the proper url if the path are the same', t => {
+  let router = lambdaRouter()
+  const getHandler = () => t.pass('Handler called')
+  const failHandler = () => t.fail('Wrong handler called')
+
+  router.get('/get/something/here', failHandler)
+  router.get('/get/something/there', getHandler)
+
+  router.route({ resourcePath: '/get/something/there', method: 'GET' }, {}).then(() => {
+    t.end()
+  })
+})
+
+test('Assert that route matches on the method if the Regex matches', t => {
+  let router = lambdaRouter()
+  const getHandler = () => t.pass('Handler called')
+  const failHandler = () => t.fail('Wrong handler called')
+
+  router.get('/get', failHandler)
+  router.get('/get/{id}', getHandler)
+
+  router.route({ resourcePath: '/get/123jkhl1khj23123', method: 'GET' }, {}).then(() => {
     t.end()
   })
 })
