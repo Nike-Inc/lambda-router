@@ -67,7 +67,7 @@ function doesPathMatch (eventPath, route) {
   if (eventPathParts.length !== routePathParts.length) return false
 
   // Start with 1 because the url should always start with the first back slash
-  for(let i = 1; i < eventPathParts.length; ++i){
+  for (let i = 1; i < eventPathParts.length; ++i) {
     const pathPart = eventPathParts[i]
     const routePart = routePathParts[i]
 
