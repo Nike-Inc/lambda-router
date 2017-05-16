@@ -7,12 +7,14 @@ module.exports = function (options) {
 }
 
 function Router (options) {
-  this.routes = []
+  this.routes = {}
+  this.cors = options.cors
   this.debug = options.debug
 }
 
 Router.prototype.addRoute = function (httpMethod, path, handler) {
-  this.routes.push({method: httpMethod, path: path, handler: handler, isRegex: (path instanceof RegExp)})
+  this.routes[`${httpMethod}_${path}`] = { method: httpMethod, path: path, handler: handler }
+  if (this.cors) this.routes[`OPTIONS_${path}`] = { method: 'OPTIONS', path: path, handler: corsHandler }
 }
 
 function wrapRoute (httpMethod, args) {
@@ -39,6 +41,10 @@ Router.prototype.unknown = function (handler) {
   }
 }
 
+Router.prototype.getRoutes = function () {
+  return Object.values(this.routes)
+}
+
 Router.prototype.log = function () {
   if (this.debug) {
     console.log.apply(console, arguments)
@@ -49,12 +55,12 @@ function getRoute (self, event) {
   const method = event.method || event.httpMethod
   const eventPath = event.path || event.resourcePath || event.resource
 
-  let route = self.routes.find(route => {
+  let route = Object.values(self.routes).find(route => {
     return eventPath === route.path && method === route.method
   })
 
   if (!route) {
-    route = self.routes.find(route => {
+    route = Object.values(self.routes).find(route => {
       return doPathPartsMatch(eventPath, route) && method === route.method
     })
   }
@@ -91,6 +97,15 @@ function doPathPartsMatch (eventPath, route) {
 function defaultUnknownRoute (event) {
   console.log('No unknown router or route provided for event: ' + JSON.stringify(event))
   throw new Error('No route specified.')
+}
+
+function corsHandler () {
+  return {
+    statusCode: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*'
+    }
+  }
 }
 
 Router.prototype.route = function (event, context) {
