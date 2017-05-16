@@ -42,7 +42,7 @@ Router.prototype.unknown = function (handler) {
 }
 
 Router.prototype.getRoutes = function () {
-  return Object.values(this.routes)
+  return Object.keys(this.routes).map(i => this.routes[i])
 }
 
 Router.prototype.log = function () {
@@ -54,13 +54,14 @@ Router.prototype.log = function () {
 function getRoute (self, event) {
   const method = event.method || event.httpMethod
   const eventPath = event.path || event.resourcePath || event.resource
+  const routeValues = self.getRoutes()
 
-  let route = Object.values(self.routes).find(route => {
+  let route = routeValues.find(route => {
     return eventPath === route.path && method === route.method
   })
 
   if (!route) {
-    route = Object.values(self.routes).find(route => {
+    route = routeValues.find(route => {
       return doPathPartsMatch(eventPath, route) && method === route.method
     })
   }
