@@ -101,7 +101,6 @@ test('Assert that route matches on the method if the Regex matches', t => {
 test('Assert that if the handler throws an error, the router rejects', t => {
   let router = lambdaRouter()
   router.debug = true
-  router.log()
 
   const getHandler = () => {
     throw new Error('testing an error')

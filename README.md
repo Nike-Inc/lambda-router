@@ -5,7 +5,7 @@ A small and simple router to simplify managing routers in a NodeJS Lambda functi
 # Usage
 
       const router = require('@nike/lambda-router')({
-        debug: true
+        logger: console
       })
       
       router.post('/v1/endpoint', service.create)
@@ -20,3 +20,5 @@ A small and simple router to simplify managing routers in a NodeJS Lambda functi
         // Handle the error
         callback(null, createResponse(error.statusCode || 500, JSON.stringify(result)))
       })
+
+You must provide a logger to the router. Otherwise, the router will be silent.

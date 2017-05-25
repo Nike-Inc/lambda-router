@@ -1,6 +1,6 @@
 {
   "name": "@nike/lambda-router",
-  "version": "0.0.11",
+  "version": "0.1.0",
   "description": "A router to simplify AWS Lambda Functions.",
   "main": "src/index.js",
   "files": [
@@ -27,6 +27,7 @@
   "author": "Kevin Ninnemann",
   "license": "UNLICENSED",
   "dependencies": {
+    "@nike/logger-wrapper": "^0.0.5",
     "co": "^4.6.0"
   },
   "devDependencies": {

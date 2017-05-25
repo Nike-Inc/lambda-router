@@ -1,6 +1,7 @@
 'use strict'
 
 const co = require('co')
+const loggerWrapper = require('@nike/logger-wrapper')
 
 module.exports = function (options) {
   return new Router(options || {})
@@ -9,6 +10,7 @@ module.exports = function (options) {
 function Router (options) {
   this.routes = []
   this.debug = options.debug
+  this.logger = loggerWrapper(options.logger)
 }
 
 Router.prototype.addRoute = function (httpMethod, path, handler) {
@@ -36,12 +38,6 @@ Router.prototype.unknown = function (handler) {
   this.unknownRoute = {
     unknown: true,
     handler: handler
-  }
-}
-
-Router.prototype.log = function () {
-  if (this.debug) {
-    console.log.apply(console, arguments)
   }
 }
 
@@ -89,20 +85,20 @@ function doPathPartsMatch (eventPath, route) {
 }
 
 function defaultUnknownRoute (event) {
-  console.log('No unknown router or route provided for event: ' + JSON.stringify(event))
+  console.error('No unknown router or route provided for event: ' + JSON.stringify(event))
   throw new Error('No route specified.')
 }
 
 Router.prototype.route = function (event, context) {
   let self = this
-  self.log('Routing event', event)
+  self.logger.trace('Routing event', event)
 
   return co(function * () {
     let matchedRoute = getRoute(self, event)
-    self.log('Matched on route', matchedRoute)
+    self.logger.trace('Matched on route', matchedRoute)
     return matchedRoute.handler(event, context)
   }).catch(error => {
-    self.log('Route error: ', error)
+    self.logger.trace('Route error: ', error)
     throw error
   })
 }
