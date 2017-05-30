@@ -91,14 +91,14 @@ function defaultUnknownRoute (event) {
 
 Router.prototype.route = function (event, context) {
   let self = this
-  self.logger.trace('Routing event', event)
+  self.logger.debug('Routing event', event)
 
   return co(function * () {
     let matchedRoute = getRoute(self, event)
-    self.logger.trace('Matched on route', matchedRoute)
+    self.logger.debug('Matched on route', matchedRoute)
     return matchedRoute.handler(event, context)
   }).catch(error => {
-    self.logger.trace('Route error: ', error)
+    self.logger.debug('Route error: ', error)
     throw error
   })
 }

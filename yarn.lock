@@ -2,9 +2,9 @@
 # yarn lockfile v1
 
 
-"@nike/logger-wrapper@^0.0.5":
-  version "0.0.5"
-  resolved "https://artifactory.nike.com/artifactory/api/npm/npm-nike/@nike/logger-wrapper/-/@nike/logger-wrapper-0.0.5.tgz#d17e803d38366b7478c38384a06e3f91f0c55e81"
+"@nike/logger-wrapper@^0.0.6":
+  version "0.0.6"
+  resolved "https://artifactory.nike.com/artifactory/api/npm/npm-nike/@nike/logger-wrapper/-/@nike/logger-wrapper-0.0.6.tgz#5494f258624af20770a4bc41319b2f1723b94b5c"
 
 acorn-jsx@^3.0.0:
   version "3.0.1"
