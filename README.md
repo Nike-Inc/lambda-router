@@ -21,4 +21,4 @@ A small and simple router to simplify managing routers in a NodeJS Lambda functi
         callback(null, createResponse(error.statusCode || 500, JSON.stringify(result)))
       })
 
-You must provide a logger to the router. Otherwise, the router will be silent.
+You must provide a logger to the router, and the router must have a `debug(message)` method. Otherwise, the router will be silent.
