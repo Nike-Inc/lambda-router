@@ -91,7 +91,7 @@ function defaultUnknownRoute (event) {
 
 Router.prototype.route = function (event, context, requestPath, httpMethod) {
   let self = this
-  self.logger.debug('Routing event', event)
+  self.logger.debug('Routing event', event, requestPath, httpMethod)
 
   return co(function * () {
     let matchedRoute = getRoute(self, event, requestPath, httpMethod)
