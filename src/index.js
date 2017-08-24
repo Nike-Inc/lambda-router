@@ -89,12 +89,12 @@ function defaultUnknownRoute (event) {
   throw new Error('No route specified.')
 }
 
-Router.prototype.route = function (event, context) {
+Router.prototype.route = function (event, context, requestPath, httpMethod) {
   let self = this
   self.logger.debug('Routing event', event)
 
   return co(function * () {
-    let matchedRoute = getRoute(self, event)
+    let matchedRoute = getRoute(self, event, requestPath, httpMethod)
     self.logger.debug('Matched on route', matchedRoute)
     return matchedRoute.handler(event, context)
   }).catch(error => {
