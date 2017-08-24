@@ -1,6 +1,6 @@
 {
   "name": "@nike/lambda-router",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A router to simplify AWS Lambda Functions.",
   "main": "src/index.js",
   "files": [

@@ -41,9 +41,9 @@ Router.prototype.unknown = function (handler) {
   }
 }
 
-function getRoute (self, event) {
-  const method = event.method || event.httpMethod
-  const eventPath = event.path || event.resourcePath || event.resource
+function getRoute (self, event, requestPath, httpMethod) {
+  const method = httpMethod || event.method || event.httpMethod
+  const eventPath = requestPath || event.path || event.resourcePath || event.resource
 
   let route = self.routes.find(route => {
     return eventPath === route.path && method === route.method
