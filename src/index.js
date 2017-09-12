@@ -71,7 +71,7 @@ function doPathPartsMatch (eventPath, route) {
     const routePart = routePathParts[i]
 
     // If the part is a curly braces value
-    if (routePart.search(/\{([a-z0-9]+)}/g) !== -1) {
+    if (routePart.search(/\{(\w+)}/g) !== -1) {
       continue
     }
 
