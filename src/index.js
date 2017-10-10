@@ -10,6 +10,7 @@ module.exports = function (options) {
 function Router (options) {
   this.routes = []
   this.debug = options.debug
+  this.tokenizePathParts = options.tokenizePathParts
   this.logger = loggerWrapper(options.logger)
 }
 
@@ -49,10 +50,17 @@ function getRoute (self, event, requestPath, httpMethod) {
     return eventPath === route.path && method === route.method
   })
 
+  
   if (!route) {
+    let tokens
     route = self.routes.find(route => {
-      return doPathPartsMatch(eventPath, route) && method === route.method
+      if (!method === route.method) return false
+      tokens = doPathPartsMatch(eventPath, route)
+      return !!tokens
     })
+    if (self.tokenizePathParts && tokens) {
+      Object.assign(event.pathParameters, tokens)
+    }
   }
 
   return route || self.unknownRoute || { handler: defaultUnknownRoute }
@@ -64,6 +72,7 @@ function doPathPartsMatch (eventPath, route) {
 
   // Fail fast if they're not the same length
   if (eventPathParts.length !== routePathParts.length) return false
+  let tokens = {}
 
   // Start with 1 because the url should always start with the first back slash
   for (let i = 1; i < eventPathParts.length; ++i) {
@@ -71,7 +80,9 @@ function doPathPartsMatch (eventPath, route) {
     const routePart = routePathParts[i]
 
     // If the part is a curly braces value
-    if (routePart.search(/\{(\w+)}/g) !== -1) {
+    let pathPartMatch = /\{(\w+)}/g.exec(routePart)
+    if (pathPartMatch) {
+      tokens[pathPartMatch[1]] = pathPart
       continue
     }
 
@@ -81,7 +92,7 @@ function doPathPartsMatch (eventPath, route) {
     }
   }
 
-  return true
+  return tokens
 }
 
 function defaultUnknownRoute (event) {
