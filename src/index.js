@@ -50,7 +50,6 @@ function getRoute (self, event, requestPath, httpMethod) {
     return eventPath === route.path && method === route.method
   })
 
-  
   if (!route) {
     let tokens
     route = self.routes.find(route => {
