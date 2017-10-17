@@ -46,15 +46,15 @@ function getRoute (self, event, requestPath, httpMethod) {
   const method = httpMethod || event.method || event.httpMethod
   const eventPath = requestPath || event.path || event.resourcePath || event.resource
 
-  let route = self.routes.find(route => {
-    return eventPath === route.path && method === route.method
+  let route = self.routes.find(r => {
+    return eventPath === r.path && method === r.method
   })
 
   if (!route) {
     let tokens
-    route = self.routes.find(route => {
-      if (!method === route.method) return false
-      tokens = doPathPartsMatch(eventPath, route)
+    route = self.routes.find(r => {
+      if (method !== r.method) return false
+      tokens = doPathPartsMatch(eventPath, r)
       return !!tokens
     })
     if (self.tokenizePathParts && tokens) {
