@@ -123,3 +123,113 @@ test('if no route is defined the default router returns an error', async t => {
   console.log(result.response)
   t.ok(JSON.parse(result.response.body).message.includes('No route specified'), 'The proper error bubbled up.')
 })
+
+test('route throws if context.response has already been set', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', () => { })
+  await router.route({}, { response: true }, '/route', 'POST')
+    .catch(err => {
+      t.ok(err.message.includes('context.response'), 'already set')
+    })
+})
+
+test('route allows custom response status codes', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', (_, { response }) => response(201, 'nothing'))
+  let result = await router.route({}, {}, '/route', 'POST')
+  t.equal(result.response.statusCode, 201, 'custom code')
+})
+
+test('route parses body with default option', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', ({ body }) => {
+    t.equal(body.name, 'tim', 'parsed')
+  })
+  await router.route({ body: JSON.stringify({ name: 'tim' }) }, {}, '/route', 'POST')
+})
+
+test('route returns 400 for parse errors', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', ({ body }) => { })
+  let result = await router.route({ body: 'name' }, '/route', 'POST')
+  t.equal(result.response.statusCode, 400)
+})
+
+test('route does not parse body with option', async t => {
+  t.plan(1)
+  let router = Router({ parseBody: false })
+  router.post('/route', ({ body }) => {
+    t.equal(body, JSON.stringify({ name: 'tim' }), 'parsed')
+  })
+  await router.route({ body: JSON.stringify({ name: 'tim' }) }, {}, '/route', 'POST')
+})
+
+test('route decodes parameters with default option', async t => {
+  t.plan(2)
+  let router = Router()
+  router.post('/route', ({ pathParameters, queryStringParameters }) => {
+    t.equal(pathParameters.name, 'tim kye', 'parsed')
+    t.equal(queryStringParameters.name, 'tim kye', 'parsed')
+  })
+  await router.route({
+    pathParameters: { name: 'tim%20kye' },
+    queryStringParameters: { name: 'tim%20kye' }
+  }, {}, '/route', 'POST')
+})
+
+test('route does not decode parameters with option', async t => {
+  t.plan(2)
+  let router = Router({ decodeEvent: false })
+  router.post('/route', ({ pathParameters, queryStringParameters }) => {
+    t.equal(pathParameters.name, 'tim%20kye', 'parsed')
+    t.equal(queryStringParameters.name, 'tim%20kye', 'parsed')
+  })
+  await router.route({
+    pathParameters: { name: 'tim%20kye' },
+    queryStringParameters: { name: 'tim%20kye' }
+  }, {}, '/route', 'POST')
+})
+
+test('traceId is created', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', () => { })
+  let result = await router.route({}, {}, '/route', 'POST')
+  t.ok(result.response.headers['X-Correlation-Id'], 'trace id ' + result.response.headers['X-Correlation-Id'])
+})
+
+test('traceId is skipped if disabled', async t => {
+  t.plan(1)
+  let router = Router({ includeTraceId: false })
+  router.post('/route', () => { })
+  let result = await router.route({}, {}, '/route', 'POST')
+  t.notOk(result.response.headers['X-Correlation-Id'], 'no trace id')
+})
+
+test('traceId is reused from event', async t => {
+  t.plan(6)
+  let router = Router()
+  router.post('/route', () => { })
+  let traceId = '1234'
+  let result = await router.route({ headers: { 'X-Trace-Id': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+
+  result = await router.route({ headers: { 'X-TRACE-ID': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+
+  result = await router.route({ headers: { 'x-trace-id': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+
+  result = await router.route({ headers: { 'X-Correlation-Id': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+
+  result = await router.route({ headers: { 'X-CORRELATION-ID': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+
+  result = await router.route({ headers: { 'x-correlation-id': traceId } }, {}, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+})
