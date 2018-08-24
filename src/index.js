@@ -63,7 +63,7 @@ function Router ({
         event.queryStringParameters = decodeProperties(event.queryStringParameters || {})
       }
     } catch (error) {
-      logger.error('error', error.toString(), error.stack)
+      logger.error('route error', error.toString(), error.stack)
       return createResponse(400, { message: 'Malformed request' }, defaultHeaders, route.path, requestPath)
     }
 
