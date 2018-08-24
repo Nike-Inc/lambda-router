@@ -1,53 +1,55 @@
 'use strict'
 
 let test = require('blue-tape')
-let lambdaRouter = require('../src/index')
+let { Router } = require('../src/index')
 
-test('Assert that GET adds a route to the routes list.', t => {
-  let router = lambdaRouter()
-  router.get('/get', () => {})
-  let route = router.routes[0]
-  t.ok(route.method === 'GET', 'Route method is GET')
-  t.ok(route.path === '/get', 'Route path is /get')
-  t.end()
+test('GET adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.get('/route', () => {
+    t.pass('called get')
+  })
+  await router.route({}, {}, '/route', 'GET')
 })
 
-test('Assert that POST adds a route to the routes list.', t => {
-  let router = lambdaRouter()
-  router.post('/post', () => {})
-  let route = router.routes[0]
-  t.ok(route.method === 'POST', 'Route method is POST')
-  t.ok(route.path === '/post', 'Route path is /post')
-  t.end()
+test('POST adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', () => {
+    t.pass('called post')
+  })
+  await router.route({}, {}, '/route', 'POST')
 })
 
-test('Assert that PUT adds a route to the routes list.', t => {
-  let router = lambdaRouter()
-  router.put('/put', () => {})
-  let route = router.routes[0]
-  t.ok(route.method === 'PUT', 'Route method is PUT')
-  t.ok(route.path === '/put', 'Route path is /put')
-  t.end()
+test('PUT adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.put('/route', () => {
+    t.pass('called put')
+  })
+  await router.route({}, {}, '/route', 'PUT')
 })
 
-test('Assert that DELETE adds a route to the routes list.', t => {
-  let router = lambdaRouter()
-  router.delete('/delete', () => {})
-  let route = router.routes[0]
-  t.ok(route.method === 'DELETE', 'Route method is DELETE')
-  t.ok(route.path === '/delete', 'Route path is /delete')
-  t.end()
+test('DELETE adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.delete('/route', () => {
+    t.pass('called delete')
+  })
+  await router.route({}, {}, '/route', 'DELETE')
 })
 
-test('Assert that unknown set the unknown route.', t => {
-  let router = lambdaRouter()
-  router.unknown(() => {})
-  t.ok(router.unknownRoute, 'Unknown route is set')
-  t.end()
+test('unknown set the unknown route.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.unknown(() => {
+    t.pass('called unknown')
+  })
+  await router.route({}, {}, '/route', 'POST')
 })
 
-test('Assert that route matches on the GET handler', t => {
-  let router = lambdaRouter()
+test('route matches on the GET handler', t => {
+  let router = Router()
   const getHandler = () => t.pass('Handler called')
   const postHandler = () => t.fail('Wrong handler called')
 
@@ -59,8 +61,8 @@ test('Assert that route matches on the GET handler', t => {
   })
 })
 
-test('Assert that route matches on the method if the path are the same', t => {
-  let router = lambdaRouter()
+test('route matches on the method if the path are the same', t => {
+  let router = Router()
   const getHandler = () => t.pass('Handler called')
   const postHandler = () => t.fail('Wrong handler called')
 
@@ -72,8 +74,8 @@ test('Assert that route matches on the method if the path are the same', t => {
   })
 })
 
-test('Assert that route matches on the proper url if the path are the same', t => {
-  let router = lambdaRouter()
+test('route matches on the proper url if the path are the same', t => {
+  let router = Router()
   const getHandler = () => t.pass('Handler called')
   const failHandler = () => t.fail('Wrong handler called')
 
@@ -85,8 +87,8 @@ test('Assert that route matches on the proper url if the path are the same', t =
   })
 })
 
-test('Assert that route matches on the method if the Regex matches', t => {
-  let router = lambdaRouter()
+test('route matches on the method if the Regex matches', t => {
+  let router = Router()
   const getHandler = () => t.pass('Handler called')
   const failHandler = () => t.fail('Wrong handler called')
 
@@ -98,8 +100,8 @@ test('Assert that route matches on the method if the Regex matches', t => {
   })
 })
 
-test('Assert that if the handler throws an error, the router rejects', t => {
-  let router = lambdaRouter()
+test('if the handler throws an error, the router returns it', async t => {
+  let router = Router()
   router.debug = true
 
   const getHandler = () => {
@@ -108,20 +110,16 @@ test('Assert that if the handler throws an error, the router rejects', t => {
 
   router.get('/get', getHandler)
 
-  router.route({ resourcePath: '/get', method: 'GET' }, {}).then(() => {
-    t.fail('An error should have been thrown.')
-  }).catch(err => {
-    t.ok(err.message.indexOf('testing an error') !== -1, 'The proper error bubbled up.')
-    t.end()
-  })
+  let result = await router.route({ resourcePath: '/get', method: 'GET' }, {})
+
+  t.notOk(result.isOk, 'resposne is error')
+  t.equal(result.response.statusCode, 500, 'status code')
+  t.ok(JSON.parse(result.response.body).message.indexOf('testing an error') !== -1, 'The proper error bubbled up.')
 })
 
-test('Assert that if no route is defined the default router throws an exception.', t => {
-  let router = lambdaRouter()
-  router.route({ resourcePath: '/none', method: 'GET' }, {}).then(() => {
-    t.fail('An error should have been thrown.')
-  }).catch(err => {
-    t.ok(err.message.indexOf('No route specified') !== -1, 'The proper error bubbled up.')
-    t.end()
-  })
+test('if no route is defined the default router returns an error', async t => {
+  let router = Router()
+  let result = await router.route({ resourcePath: '/none', method: 'GET' }, {})
+  console.log(result.response)
+  t.ok(JSON.parse(result.response.body).message.includes('No route specified'), 'The proper error bubbled up.')
 })

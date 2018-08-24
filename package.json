@@ -6,13 +6,24 @@
   "files": [
     "src"
   ],
+  "engines": {
+    "node": ">=8.10"
+  },
   "scripts": {
+    "test:coverage": "nyc --check-coverage --lines 90 npm run test:unit && npm run report",
+    "test": "npm run style && npm run test:unit && npm run test:int",
+    "test:unit": "blue-tape \"test/**/**.spec.js\" | tap-spec",
+    "test:unit:watch": "npm run test:unit -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:unit -s\"",
+    "test:int": "blue-tape test/**/**.int.js | tap-spec",
+    "test:int:watch": "npm run test:int -s & chokidar 'src/**/*.js' 'test/**/*.int.js' --polling -c \"npm run test:int -s\"",
+    "test:watch": "npm run test:coverage -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:coverage -s\"",
+    "test:ci": "npm run style && blue-tape test/**/**.spec.js | tap-xunit > xunit.xml && blue-tape test/**/**.int.js | tap-xunit > xunit.xml && npm run test:coverage && npm run report:ci",
+    "report": "nyc report --reporter=html",
+    "report:ci": "npm run report",
+    "report:open": "npm run report && open coverage/index.html",
+    "test:coverage:open": "npm run test:coverage && npm run report:open",
     "style": "standard \"src/**/*.js\" | snazzy",
     "style:fix": "standard \"src/**/*.js\" --fix",
-    "blue-tape": "nyc --check-coverage --lines 100 blue-tape test/**/**.spec.js | ./node_modules/.bin/tap-spec",
-    "report": "nyc report --reporter=html",
-    "test": "npm run style && npm run blue-tape && npm run report",
-    "test:watch": "npm run test -s & ./node_modules/.bin/chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"./node_modules/.bin/blue-tape test/**/**.spec.js | node_modules/.bin/tap-spec\"",
     "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/"
   },
   "repository": {
@@ -24,17 +35,22 @@
     "lambda",
     "router"
   ],
+  "standard": {
+    "parser": "babel-eslint"
+  },
   "author": "Kevin Ninnemann",
   "license": "UNLICENSED",
   "dependencies": {
-    "co": "^4.6.0",
-    "@nike/logger-wrapper": "^0.0.6"
+    "@nike/logger-wrapper": "^0.1.0",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "jsdoc": "^3.4.3",
-    "blue-tape": "^0.2.0",
-    "expect": "1.20.2",
     "aws-sdk": "^2.4.8",
+    "babel-eslint": "^6.1.2",
+    "blue-tape": "^0.2.0",
+    "chokidar-cli": "^1.2.0",
+    "expect": "1.20.2",
+    "jsdoc": "^3.4.3",
     "nyc": "latest",
     "snazzy": "^5.0.0",
     "standard": "8.1.0",
