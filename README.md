@@ -24,7 +24,7 @@ npm install @nike/lambda-router
 
 const router = require('@nike/lambda-router')({
   logger: console // uses @nike/logger-wrapper.
-  inluceErrorStack: process.env.stage
+  inluceErrorStack: process.env.stage !== 'prod
 })
 
 router.post('/v1/endpoint', service.create)
