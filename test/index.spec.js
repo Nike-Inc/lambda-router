@@ -155,7 +155,7 @@ test('route returns 400 for parse errors', async t => {
   t.plan(1)
   let router = Router()
   router.post('/route', ({ body }) => { })
-  let result = await router.route({ body: 'name' }, '/route', 'POST')
+  let result = await router.route({ body: 'name' }, {}, '/route', 'POST')
   t.equal(result.response.statusCode, 400)
 })
 
@@ -232,4 +232,19 @@ test('traceId is reused from event', async t => {
 
   result = await router.route({ headers: { 'x-correlation-id': traceId } }, {}, '/route', 'POST')
   t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+})
+
+test('context getters work inside routes', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', (event, { name }) => {
+    t.equal(name, 'tim', 'context prop passed in')
+  })
+  let context = {}
+  Object.defineProperty(context, 'name', {
+    enumerable: false,
+    configurable: false,
+    get: () => 'tim'
+  })
+  await router.route({}, context, '/route', 'POST')
 })

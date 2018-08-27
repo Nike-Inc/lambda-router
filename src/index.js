@@ -35,15 +35,15 @@ function Router ({
   // External hooks
   let onErrorFormat
 
-  const route = async (event, lambdaContext, requestPath, httpMethod) => {
+  const route = async (event, context, requestPath, httpMethod) => {
     // Safety Checks
-    if (lambdaContext.response) {
+    if (context.response) {
       let message = 'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
       logger.error(message)
       return Promise.reject(new Error(message))
     }
-    // Clone context
-    let context = {...lambdaContext, response: customResponse}
+    // Custom Response
+    context.response = customResponse
 
     // Allow method and path overrides
     httpMethod = httpMethod || event.method || event.httpMethod
