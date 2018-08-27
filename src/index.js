@@ -1,68 +1,149 @@
 'use strict'
 
-const co = require('co')
+const uuid = require('uuid/v4')
+const CUSTOM_RESPONSE = Symbol('lambda-router:custom-response')
 const loggerWrapper = require('@nike/logger-wrapper')
 
-module.exports = function (options) {
-  return new Router(options || {})
+module.exports = {
+  Router,
+  createProxyResponse
 }
 
-function Router (options) {
-  this.routes = []
-  this.debug = options.debug
-  this.tokenizePathParts = options.tokenizePathParts
-  this.logger = loggerWrapper(options.logger)
-}
+function Router ({
+  logger,
+  extractPathParameters = true,
+  includeTraceId = true,
+  inluceErrorStack = false,
+  cors = true,
+  parseBody = true,
+  decodeEvent = true
+} = {}) {
+  logger = loggerWrapper(logger)
+  const routes = []
+  const add = (method, path, handler) => {
+    routes.push({ method, path, handler })
+  }
 
-Router.prototype.addRoute = function (httpMethod, path, handler) {
-  this.routes.push({method: httpMethod, path: path, handler: handler, isRegex: (path instanceof RegExp)})
-}
+  let unknownRouteHandler = { handler: defaultUnknownRoute }
+  let defaultHeaders = {
+    'Content-Type': 'application/json'
+  }
+  if (cors) {
+    defaultHeaders['Access-Control-Allow-Origin'] = typeof cors === 'boolean' ? '*' : cors
+  }
 
-function wrapRoute (httpMethod, args) {
-  return this.addRoute.apply(this, [httpMethod].concat(Array.prototype.slice.call(args)))
-}
+  // External hooks
+  let onErrorFormat
 
-Router.prototype.get = function () {
-  return wrapRoute.call(this, 'GET', arguments)
-}
-Router.prototype.post = function () {
-  return wrapRoute.call(this, 'POST', arguments)
-}
-Router.prototype.put = function () {
-  return wrapRoute.call(this, 'PUT', arguments)
-}
-Router.prototype['delete'] = function () {
-  return wrapRoute.call(this, 'DELETE', arguments)
-}
+  const route = async (event, lambdaContext, requestPath, httpMethod) => {
+    // Safety Checks
+    if (lambdaContext.response) {
+      let message = 'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
+      logger.error(message)
+      return Promise.reject(new Error(message))
+    }
+    // Clone context
+    let context = {...lambdaContext, response: customResponse}
 
-Router.prototype.unknown = function (handler) {
-  this.unknownRoute = {
-    unknown: true,
-    handler: handler
+    // Allow method and path overrides
+    httpMethod = httpMethod || event.method || event.httpMethod
+    requestPath = requestPath || event.path || event.resourcePath || event.resource
+
+    let route = getRoute(routes, event, requestPath, httpMethod) || unknownRouteHandler
+
+    // Parse and decode
+    try {
+      if (parseBody && event.body && typeof event.body === 'string') {
+        logger.debug('parsing body')
+        event.body = JSON.parse(event.body)
+      }
+      if (decodeEvent) {
+        logger.debug('decoding parameters')
+        event.pathParameters = decodeProperties(event.pathParameters || {})
+        event.queryStringParameters = decodeProperties(event.queryStringParameters || {})
+      }
+    } catch (error) {
+      logger.error('route error', error.toString(), error.stack)
+      return createResponse(400, { message: 'Malformed request' }, defaultHeaders, route.path, requestPath)
+    }
+
+    // Route
+    let statusCode, body
+    let headers = { ...defaultHeaders }
+    if (includeTraceId) headers['X-Correlation-Id'] = getTraceId(event)
+    try {
+      // It is possible for the handler to be a synchronous method
+      // So wrap it in a promise to get consistent behavior from "await"
+      // And if it throws synchronously, then() will reject/throw
+      let result = await Promise.resolve().then(() => route.handler(event, context))
+      if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
+        statusCode = result.statusCode
+        body = result.body
+        headers = {...defaultHeaders, ...result.headers}
+      } else {
+        statusCode = 200
+        body = result
+      }
+    } catch (error) {
+      statusCode = error.statusCode || 500
+      body = {
+        ...error,
+        // The spread doesn't get the non-enumerable message
+        message: error.message,
+        stack: inluceErrorStack && error.stack
+      }
+      if (onErrorFormat && typeof onErrorFormat === 'function') {
+        body = onErrorFormat(statusCode, body)
+      }
+    }
+
+    return createResponse(statusCode, body, headers, route.path, requestPath)
+  }
+
+  // Bound router functions
+  return {
+    get: add.bind(null, 'GET'),
+    post: add.bind(null, 'POST'),
+    put: add.bind(null, 'PUT'),
+    'delete': add.bind(null, 'DELETE'),
+    unknown: (handler) => { unknownRouteHandler = { handler } },
+    formatError: (handler) => { onErrorFormat = handler },
+    route
   }
 }
 
-function getRoute (self, event, requestPath, httpMethod) {
-  const method = httpMethod || event.method || event.httpMethod
-  const eventPath = requestPath || event.path || event.resourcePath || event.resource
+function customResponse (statusCode, body, headers) {
+  let response = {
+    statusCode,
+    body,
+    headers
+  }
+  Object.defineProperty(response, '_isCustomResponse', {
+    enumerable: false,
+    configurable: false,
+    value: CUSTOM_RESPONSE
+  })
+  return response
+}
 
-  let route = self.routes.find(r => {
+function getRoute (routes, event, eventPath, method, tokenizePathParts) {
+  let route = routes.find(r => {
     return eventPath === r.path && method === r.method
   })
 
   if (!route) {
     let tokens
-    route = self.routes.find(r => {
+    route = routes.find(r => {
       if (method !== r.method) return false
       tokens = doPathPartsMatch(eventPath, r)
       return !!tokens
     })
-    if (self.tokenizePathParts && tokens) {
+    if (tokenizePathParts && tokens) {
       Object.assign(event.pathParameters, tokens)
     }
   }
 
-  return route || self.unknownRoute || { handler: defaultUnknownRoute }
+  return route
 }
 
 function doPathPartsMatch (eventPath, route) {
@@ -95,20 +176,43 @@ function doPathPartsMatch (eventPath, route) {
 }
 
 function defaultUnknownRoute (event) {
-  console.error('No unknown router or route provided for event: ' + JSON.stringify(event))
   throw new Error('No route specified.')
 }
 
-Router.prototype.route = function (event, context, requestPath, httpMethod) {
-  let self = this
-  self.logger.debug('Routing event', event, requestPath, httpMethod)
+function createResponse (statusCode, body, headers, endpoint, uri) {
+  return {
+    endpoint,
+    uri,
+    isOk: statusCode.toString()[0] === '2',
+    response: createProxyResponse(statusCode, body, headers)
+  }
+}
 
-  return co(function * () {
-    let matchedRoute = getRoute(self, event, requestPath, httpMethod)
-    self.logger.debug('Matched on route', matchedRoute)
-    return matchedRoute.handler(event, context)
-  }).catch(error => {
-    self.logger.debug('Route error: ', error)
-    throw error
-  })
+function createProxyResponse (statusCode, body, headers = {}) {
+  if (headers['Content-Type'] === undefined) headers['Content-Type'] = 'application/json'
+  // output follows the format described here
+  // http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html?shortFooter=true#api-gateway-simple-proxy-for-lambda-output-format
+  return {
+    statusCode: statusCode,
+    body: JSON.stringify(body),
+    headers: { ...headers }
+  }
+}
+
+function getTraceId (event) {
+  return event.headers &&
+    (event.headers['X-Trace-Id'] ||
+      event.headers['X-TRACE-ID'] ||
+      event.headers['x-trace-id'] ||
+      event.headers['X-Correlation-Id'] ||
+      event.headers['X-CORRELATION-ID'] ||
+      event.headers['x-correlation-id']) ||
+    uuid()
+}
+
+function decodeProperties (obj) {
+  return obj && Object.keys(obj).reduce((r, key) => {
+    r[key] = decodeURIComponent(obj[key])
+    return r
+  }, {})
 }
