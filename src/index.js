@@ -72,12 +72,9 @@ function Router ({
     let headers = { ...defaultHeaders }
     if (includeTraceId) headers['X-Correlation-Id'] = getTraceId(event)
     try {
-      // It is possible for the handler to be a synchronous method
-      // So wrap it in a promise to get consistent behavior from "await"
-      // And if it throws synchronously, then() will reject/throw
-      let result = await route
+      let result = await (route
           ? route.handler(event, context)
-          : unknownRouteHandler(event, context, requestPath, httpMethod)
+          : unknownRouteHandler(event, context, requestPath, httpMethod))
       if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
         statusCode = result.statusCode
         body = result.body
@@ -198,7 +195,7 @@ function createProxyResponse (statusCode, body, headers = {}) {
   // http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html?shortFooter=true#api-gateway-simple-proxy-for-lambda-output-format
   return {
     statusCode: statusCode,
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+    body: typeof body === 'object' ? JSON.stringify(body) : body,
     headers: { ...headers }
   }
 }

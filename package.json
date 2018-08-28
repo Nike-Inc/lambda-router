@@ -11,11 +11,9 @@
   },
   "scripts": {
     "test:coverage": "nyc --check-coverage --lines 90 npm run test:unit && npm run report",
-    "test": "npm run style && npm run test:unit && npm run test:int",
+    "test": "npm run style && npm run test:unit",
     "test:unit": "blue-tape \"test/**/**.spec.js\" | tap-spec",
     "test:unit:watch": "npm run test:unit -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:unit -s\"",
-    "test:int": "blue-tape test/**/**.int.js | tap-spec",
-    "test:int:watch": "npm run test:int -s & chokidar 'src/**/*.js' 'test/**/*.int.js' --polling -c \"npm run test:int -s\"",
     "test:watch": "npm run test:coverage -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:coverage -s\"",
     "test:ci": "npm run style && blue-tape test/**/**.spec.js | tap-xunit > xunit.xml && blue-tape test/**/**.int.js | tap-xunit > xunit.xml && npm run test:coverage && npm run report:ci",
     "report": "nyc report --reporter=html",
