@@ -24,7 +24,7 @@ function Router ({
     routes.push({ method, path, handler })
   }
 
-  let unknownRouteHandler = { handler: defaultUnknownRoute }
+  let unknownRouteHandler = defaultUnknownRoute
   let defaultHeaders = {
     'Content-Type': 'application/json'
   }
@@ -49,7 +49,7 @@ function Router ({
     httpMethod = httpMethod || event.method || event.httpMethod
     requestPath = requestPath || event.path || event.resourcePath || event.resource
 
-    let route = getRoute(routes, event, requestPath, httpMethod) || unknownRouteHandler
+    let route = getRoute(routes, event, requestPath, httpMethod)
 
     // Parse and decode
     try {
@@ -75,7 +75,9 @@ function Router ({
       // It is possible for the handler to be a synchronous method
       // So wrap it in a promise to get consistent behavior from "await"
       // And if it throws synchronously, then() will reject/throw
-      let result = await Promise.resolve().then(() => route.handler(event, context))
+      let result = await route
+          ? route.handler(event, context)
+          : unknownRouteHandler(event, context, requestPath, httpMethod)
       if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
         statusCode = result.statusCode
         body = result.body
@@ -97,7 +99,7 @@ function Router ({
       }
     }
 
-    return createResponse(statusCode, body, headers, route.path, requestPath)
+    return createResponse(statusCode, body, headers, route && route.path, requestPath)
   }
 
   // Bound router functions
@@ -106,7 +108,7 @@ function Router ({
     post: add.bind(null, 'POST'),
     put: add.bind(null, 'PUT'),
     'delete': add.bind(null, 'DELETE'),
-    unknown: (handler) => { unknownRouteHandler = { handler } },
+    unknown: (handler) => { unknownRouteHandler = handler },
     formatError: (handler) => { onErrorFormat = handler },
     route
   }
@@ -175,8 +177,10 @@ function doPathPartsMatch (eventPath, route) {
   return tokens
 }
 
-function defaultUnknownRoute (event) {
-  throw new Error('No route specified.')
+function defaultUnknownRoute (event, context, path, method) {
+  let error = new Error(`No route specified for path: ${path}`)
+  error.statusCode = 404
+  throw error
 }
 
 function createResponse (statusCode, body, headers, endpoint, uri) {
@@ -194,7 +198,7 @@ function createProxyResponse (statusCode, body, headers = {}) {
   // http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html?shortFooter=true#api-gateway-simple-proxy-for-lambda-output-format
   return {
     statusCode: statusCode,
-    body: JSON.stringify(body),
+    body: typeof body === 'string' ? body : JSON.stringify(body),
     headers: { ...headers }
   }
 }
