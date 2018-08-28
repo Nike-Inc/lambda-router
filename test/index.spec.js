@@ -40,11 +40,12 @@ test('DELETE adds a route to the routes list.', async t => {
 })
 
 test('Unknown route returns error.', async t => {
-  t.plan(3)
+  t.plan(4)
   let router = Router()
   let result = await router.route({ method: 'DELETE', path: '/route' }, {})
   t.equal(result.endpoint, undefined, 'no endpoint')
   t.equal(result.uri, '/route', 'has uri')
+  t.equal(result.response.statusCode, 404, 'has uri')
   t.ok(result.response.body.includes('No route specified for path: /route'), 'has error')
 })
 
@@ -55,6 +56,17 @@ test('unknown set the unknown route.', async t => {
     t.pass('called unknown')
   })
   await router.route({}, {}, '/route', 'POST')
+})
+
+test('unknown handler can use custom responses.', async t => {
+  t.plan(2)
+  let router = Router()
+  router.unknown((event, { response }, path, method) => {
+    return response(404, { message: `You dun screwed up, now. ${path} doesn't exist!` })
+  })
+  let result = await router.route({}, {}, '/route', 'POST')
+  t.equal(result.response.statusCode, 404, 'status code')
+  t.equal(JSON.parse(result.response.body).message, `You dun screwed up, now. ${'/route'} doesn't exist!`, 'got message')
 })
 
 test('GET result has uri and endpoint.', async t => {

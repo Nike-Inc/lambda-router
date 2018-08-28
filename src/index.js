@@ -178,7 +178,9 @@ function doPathPartsMatch (eventPath, route) {
 }
 
 function defaultUnknownRoute (event, context, path, method) {
-  throw new Error(`No route specified for path: ${path}`)
+  let error = new Error(`No route specified for path: ${path}`)
+  error.statusCode = 404
+  throw error
 }
 
 function createResponse (statusCode, body, headers, endpoint, uri) {
@@ -196,7 +198,7 @@ function createProxyResponse (statusCode, body, headers = {}) {
   // http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html?shortFooter=true#api-gateway-simple-proxy-for-lambda-output-format
   return {
     statusCode: statusCode,
-    body: JSON.stringify(body),
+    body: typeof body === 'string' ? body : JSON.stringify(body),
     headers: { ...headers }
   }
 }
