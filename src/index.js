@@ -75,11 +75,9 @@ function Router ({
       // It is possible for the handler to be a synchronous method
       // So wrap it in a promise to get consistent behavior from "await"
       // And if it throws synchronously, then() will reject/throw
-      let result = await Promise.resolve().then(() => {
-        return route
+      let result = await route
           ? route.handler(event, context)
           : unknownRouteHandler(event, context, requestPath, httpMethod)
-      })
       if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
         statusCode = result.statusCode
         body = result.body
