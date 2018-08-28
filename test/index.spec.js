@@ -39,6 +39,15 @@ test('DELETE adds a route to the routes list.', async t => {
   await router.route({}, {}, '/route', 'DELETE')
 })
 
+test('Unknown route returns error.', async t => {
+  t.plan(3)
+  let router = Router()
+  let result = await router.route({ method: 'DELETE', path: '/route' }, {})
+  t.equal(result.endpoint, undefined, 'no endpoint')
+  t.equal(result.uri, '/route', 'has uri')
+  t.ok(result.response.body.includes('No route specified for path: /route'), 'has error')
+})
+
 test('unknown set the unknown route.', async t => {
   t.plan(1)
   let router = Router()
@@ -46,6 +55,15 @@ test('unknown set the unknown route.', async t => {
     t.pass('called unknown')
   })
   await router.route({}, {}, '/route', 'POST')
+})
+
+test('GET result has uri and endpoint.', async t => {
+  t.plan(2)
+  let router = Router()
+  router.get('/route/{id}', () => {})
+  let result = await router.route({}, {}, '/route/1234', 'GET')
+  t.equal(result.endpoint, '/route/{id}', 'has endpoint')
+  t.equal(result.uri, '/route/1234', 'has uri')
 })
 
 test('route matches on the GET handler', t => {
@@ -120,7 +138,6 @@ test('if the handler throws an error, the router returns it', async t => {
 test('if no route is defined the default router returns an error', async t => {
   let router = Router()
   let result = await router.route({ resourcePath: '/none', method: 'GET' }, {})
-  console.log(result.response)
   t.ok(JSON.parse(result.response.body).message.includes('No route specified'), 'The proper error bubbled up.')
 })
 
