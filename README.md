@@ -21,8 +21,8 @@ npm install @nike/lambda-router
 
 # Quick Start
 ```javascript
-
-const router = require('@nike/lambda-router')({
+const { Router } = require('@nike/lambda-router')
+const router = Router({
   logger: console // uses @nike/logger-wrapper.
   inluceErrorStack: process.env.stage !== 'prod'
 })
