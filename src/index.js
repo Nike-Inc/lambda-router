@@ -13,7 +13,7 @@ function Router ({
   logger,
   extractPathParameters = true,
   includeTraceId = true,
-  inluceErrorStack = false,
+  includeErrorStack = false,
   cors = true,
   parseBody = true,
   decodeEvent = true
@@ -89,7 +89,7 @@ function Router ({
         ...error,
         // The spread doesn't get the non-enumerable message
         message: error.message,
-        stack: inluceErrorStack && error.stack
+        stack: includeErrorStack && error.stack
       }
       if (onErrorFormat && typeof onErrorFormat === 'function') {
         body = onErrorFormat(statusCode, body)
