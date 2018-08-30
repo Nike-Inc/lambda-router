@@ -130,6 +130,36 @@ test('route matches on the method if the Regex matches', t => {
   })
 })
 
+test('route tokenizes path parts', t => {
+  let router = Router()
+  const getHandler = ({ pathParameters: { id } }) => {
+    t.equal(id, '123jkhl1khj23123', 'got tokenized id')
+  }
+  const failHandler = () => t.fail('Wrong handler called')
+
+  router.get('/get', failHandler)
+  router.get('/get/{id}', getHandler)
+
+  router.route({ resourcePath: '/get/123jkhl1khj23123', method: 'GET' }, {}).then(() => {
+    t.end()
+  })
+})
+
+test('route does not tokenize without option', t => {
+  let router = Router({ extractPathParameters: false })
+  const getHandler = ({ pathParameters }) => {
+    t.same(pathParameters, {}, 'no id')
+  }
+  const failHandler = () => t.fail('Wrong handler called')
+
+  router.get('/get', failHandler)
+  router.get('/get/{id}', getHandler)
+
+  router.route({ pathParameters: {}, resourcePath: '/get/123jkhl1khj23123', method: 'GET' }, {}).then(() => {
+    t.end()
+  })
+})
+
 test('if the handler throws an error, the router returns it', async t => {
   let router = Router()
   router.debug = true

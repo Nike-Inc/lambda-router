@@ -49,7 +49,7 @@ function Router ({
     httpMethod = httpMethod || event.method || event.httpMethod
     requestPath = requestPath || event.path || event.resourcePath || event.resource
 
-    let route = getRoute(routes, event, requestPath, httpMethod)
+    let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
 
     // Parse and decode
     try {
@@ -138,6 +138,7 @@ function getRoute (routes, event, eventPath, method, tokenizePathParts) {
       return !!tokens
     })
     if (tokenizePathParts && tokens) {
+      if (!event.pathParameters) event.pathParameters = {}
       Object.assign(event.pathParameters, tokens)
     }
   }
