@@ -12,6 +12,9 @@ module.exports = {
 function Router ({
   logger,
   extractPathParameters = true,
+  // default to false, otherwise adding this would be a breaking change
+  // TODO: v3, default true
+  trimTrailingSlash = false,
   includeTraceId = true,
   includeErrorStack = false,
   cors = true,
@@ -48,6 +51,10 @@ function Router ({
     // Allow method and path overrides
     httpMethod = httpMethod || event.method || event.httpMethod
     requestPath = requestPath || event.path || event.resourcePath || event.resource
+
+    if (trimTrailingSlash) {
+      requestPath = requestPath.replace(/\/$/, '')
+    }
 
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
 

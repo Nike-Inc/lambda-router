@@ -69,6 +69,27 @@ test('unknown handler can use custom responses.', async t => {
   t.equal(JSON.parse(result.response.body).message, `You dun screwed up, now. ${'/route'} doesn't exist!`, 'got message')
 })
 
+test('GET routes with trialing slash', async t => {
+  t.plan(1)
+  let router = Router({ trimTrailingSlash: true })
+  router.get('/route', () => {
+    t.pass('called get')
+  })
+  await router.route({}, {}, '/route/', 'GET')
+})
+
+test('trialing slash causes unknown route', async t => {
+  t.plan(1)
+  let router = Router({ trimTrailingSlash: false })
+  router.get('/route', () => {
+    t.fail('called get')
+  })
+  router.unknown(() => {
+    t.pass('called unknown')
+  })
+  await router.route({}, {}, '/route/', 'GET')
+})
+
 test('GET result has uri and endpoint.', async t => {
   t.plan(2)
   let router = Router()
