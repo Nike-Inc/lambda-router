@@ -46,7 +46,7 @@ function Router ({
       return Promise.reject(new Error(message))
     }
     // Custom Response
-    context.response = customResponse
+    context.response = customResponse.bind(null, context)
 
     // Allow method and path overrides
     httpMethod = httpMethod || event.method || event.httpMethod
@@ -77,7 +77,7 @@ function Router ({
     // Route
     let statusCode, body
     let headers = { ...defaultHeaders }
-    if (includeTraceId) headers['X-Correlation-Id'] = getTraceId(event)
+    if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
       let result = await (route
           ? route.handler(event, context)
@@ -118,11 +118,14 @@ function Router ({
   }
 }
 
-function customResponse (statusCode, body, headers) {
+function customResponse (context, statusCode, body, headers) {
   let response = {
     statusCode,
     body,
     headers
+  }
+  if (context.includeTraceId && context.traceId) {
+    headers['X-Correlation-Id'] = context.traceId
   }
   Object.defineProperty(response, '_isCustomResponse', {
     enumerable: false,
@@ -208,7 +211,7 @@ function createProxyResponse (statusCode, body, headers = {}) {
   }
 }
 
-function getTraceId (event) {
+function getTraceId (event, context) {
   return event.headers &&
     (event.headers['X-Trace-Id'] ||
       event.headers['X-TRACE-ID'] ||
@@ -216,6 +219,7 @@ function getTraceId (event) {
       event.headers['X-Correlation-Id'] ||
       event.headers['X-CORRELATION-ID'] ||
       event.headers['x-correlation-id']) ||
+      context.awsRequestId ||
     uuid()
 }
 

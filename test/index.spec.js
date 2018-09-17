@@ -314,6 +314,15 @@ test('traceId is reused from event', async t => {
   t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
 })
 
+test('traceId is reused from context', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', () => { })
+  let traceId = '1234'
+  let result = await router.route({ headers: { } }, { awsRequestId: traceId }, '/route', 'POST')
+  t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
+})
+
 test('context getters work inside routes', async t => {
   t.plan(1)
   let router = Router()
