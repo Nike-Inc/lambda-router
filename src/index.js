@@ -15,7 +15,7 @@ function Router ({
   // default to false, otherwise adding this would be a breaking change
   // TODO: v3, default true
   trimTrailingSlash = false,
-  includeTraceId = true,
+  includeTraceId = true, // TODO: v3, remove. This has been pulled into chronicle instead
   includeErrorStack = false,
   cors = true,
   parseBody = true,
