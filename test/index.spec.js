@@ -12,6 +12,19 @@ test('GET adds a route to the routes list.', async t => {
   await router.route({}, {}, '/route', 'GET')
 })
 
+test('GET matches with querystring.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.get('/route', ({ queryStringParameters: { name } }) => {
+    t.equal(name, 'tim', 'got qeury')
+  })
+  await router.route({
+    path: '/route',
+    httpMethod: 'GET',
+    queryStringParameters: { name: 'tim' }
+  }, {})
+})
+
 test('POST adds a route to the routes list.', async t => {
   t.plan(1)
   let router = Router()
