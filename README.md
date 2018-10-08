@@ -102,6 +102,21 @@ router.post('/v1/endpoint', handleDelete)
 async function handleCreate({ headers }, { path, response })
   let dbItem = await createNewItem()
   return response(201, result, { Location: 'https://' + headers.Host + path + '/' + dbItem.id })
+
+async function download({ headers }, { path, response })
+  let file = getFileBuffer()
+  return response(201, file, { 'Content-Type': 'application/octet-stream' })
+```
+
+# Custom Headers
+
+Fully-custom responses are sometimes undesirable, as they avoid some of the automatic behavior of normal respones (such as error formatting). If your only goal is to set a custom response header you can use `response.setHeader`
+
+```javascript
+router.post('/route', (_, { response }) => {
+    response.setHeader('Location', 'something')
+    return { message: 'success' }
+  })
 ```
 
 

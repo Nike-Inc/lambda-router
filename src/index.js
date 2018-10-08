@@ -39,6 +39,8 @@ function Router ({
   let onErrorFormat
 
   const route = async (event, context, requestPath, httpMethod) => {
+    let statusCode, body
+    let headers = { ...defaultHeaders }
     // Safety Checks
     if (context.response) {
       let message = 'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
@@ -47,6 +49,10 @@ function Router ({
     }
     // Custom Response
     context.response = customResponse.bind(null, context)
+    // Allow setting custom header without full-custom response
+    context.response.setHeader = (header, value) => {
+      headers[header] = value
+    }
 
     // Allow method and path overrides
     httpMethod = httpMethod || event.method || event.httpMethod
@@ -75,8 +81,6 @@ function Router ({
     }
 
     // Route
-    let statusCode, body
-    let headers = { ...defaultHeaders }
     if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
       let result = await (route
