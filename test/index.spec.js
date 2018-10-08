@@ -211,6 +211,26 @@ test('if the handler throws an error, the router returns it', async t => {
   t.ok(JSON.parse(result.response.body).message.indexOf('testing an error') !== -1, 'The proper error bubbled up.')
 })
 
+test('if the handler throws an error, the router formats it', async t => {
+  let router = Router()
+  router.debug = true
+
+  router.get('/get', () => {
+    throw new Error('testing an error')
+  })
+
+  router.formatError((statusCode, error) => {
+    error.customProp = 'formatted'
+    return error
+  })
+
+  let result = await router.route({ resourcePath: '/get', method: 'GET' }, {})
+
+  t.notOk(result.isOk, 'resposne is error')
+  t.equal(result.response.statusCode, 500, 'status code')
+  t.equal(JSON.parse(result.response.body).customProp, 'formatted', 'custom formatting applied')
+})
+
 test('if no route is defined the default router returns an error', async t => {
   let router = Router()
   let result = await router.route({ resourcePath: '/none', method: 'GET' }, {})
@@ -233,6 +253,37 @@ test('route allows custom response status codes', async t => {
   router.post('/route', (_, { response }) => response(201, 'nothing'))
   let result = await router.route({}, {}, '/route', 'POST')
   t.equal(result.response.statusCode, 201, 'custom code')
+})
+
+test('route allows custom response headers', async t => {
+  t.plan(3)
+  let router = Router()
+  router.post('/route', (_, { response }) => {
+    response.setHeader('Location', 'something')
+    return { message: 'success' }
+  })
+  let result = await router.route({}, {}, '/route', 'POST')
+  t.equal(result.response.statusCode, 200, 'status code')
+  t.equal(result.response.body, JSON.stringify({ message: 'success' }), 'body')
+  t.equal(result.response.headers['Location'], 'something', 'custom header')
+})
+
+test('route errors still format when using custom response headers', async t => {
+  let router = Router()
+  router.debug = true
+
+  router.get('/get', (_, { response }) => {
+    response.setHeader('Location', 'something')
+    throw new Error('testing an error')
+  })
+
+  router.formatError((statusCode, error) => {
+    error.customProp = 'formatted'
+    return error
+  })
+
+  let result = await router.route({ resourcePath: '/get', method: 'GET' }, {})
+  t.equal(result.response.headers['Location'], 'something', 'custom header')
 })
 
 test('route parses body with default option', async t => {
