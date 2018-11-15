@@ -1,8 +1,10 @@
 'use strict'
 
 const uuid = require('uuid/v4')
-const CUSTOM_RESPONSE = Symbol('lambda-router:custom-response')
 const loggerWrapper = require('@nike/logger-wrapper')
+
+const CUSTOM_RESPONSE = Symbol('lambda-router:custom-response')
+const TRACE_ID = Symbol('trace-id')
 
 module.exports = {
   Router,
@@ -21,6 +23,14 @@ function Router ({
   parseBody = true,
   decodeEvent = true
 } = {}) {
+  const originalLogger = logger
+
+  if (originalLogger.events && originalLogger.setKey) {
+    originalLogger.events.on('beforeHandler', (event, context) => {
+      originalLogger.setKey('traceId', getTraceId(event, context))
+    })
+  }
+
   logger = loggerWrapper(logger)
   const routes = []
   const add = (method, path, handler) => {
@@ -216,15 +226,17 @@ function createProxyResponse (statusCode, body, headers = {}) {
 }
 
 function getTraceId (event, context) {
-  return event.headers &&
+  const traceId = event.headers &&
     (event.headers['X-Trace-Id'] ||
       event.headers['X-TRACE-ID'] ||
       event.headers['x-trace-id'] ||
       event.headers['X-Correlation-Id'] ||
       event.headers['X-CORRELATION-ID'] ||
       event.headers['x-correlation-id']) ||
-      context.awsRequestId ||
+    context.awsRequestId ||
     uuid()
+  context[TRACE_ID] = traceId
+  return traceId
 }
 
 function decodeProperties (obj) {
