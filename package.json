@@ -39,7 +39,6 @@
   "author": "Kevin Ninnemann",
   "license": "UNLICENSED",
   "dependencies": {
-    "@nike/logger-wrapper": "^0.1.0",
     "uuid": "^3.3.2"
   },
   "devDependencies": {

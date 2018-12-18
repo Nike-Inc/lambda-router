@@ -1,7 +1,7 @@
 'use strict'
 
 const uuid = require('uuid/v4')
-const loggerWrapper = require('@nike/logger-wrapper')
+const { loggerWrapper } = require('./logger')
 
 const CUSTOM_RESPONSE = Symbol('lambda-router:custom-response')
 const TRACE_ID = Symbol('trace-id')
