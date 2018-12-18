@@ -4,26 +4,15 @@ A small and simple router to simplify managing routers in a NodeJS Lambda functi
 
 # Installation
 
-This package is published to Nike's internal Atrificatory npm registry. To install from it you will need an `.npmrc` file in your project
-
 ```
-registry=http://artifactory.nike.com/artifactory/api/npm/npm-nike
-@nike:registry=http://artifactory.nike.com/artifactory/api/npm/npm-nike/
-```
-
-The first line is technically optional, since the scope is all you need to get `@nike/` scoped packages. However it is recommended as additional caching and security analysis is done on packages in our Artifactory registry.
-
-After you have that setup, just install from npm normally.
-
-```
-npm install @nike/lambda-router
+-- still working on the official package name
 ```
 
 # Quick Start
 ```javascript
-const { Router } = require('@nike/lambda-router')
+const { Router } = require('lambda-router')
 const router = Router({
-  logger: console // uses @nike/logger-wrapper.
+  logger: console // uses logger-wrapper.
   inluceErrorStack: process.env.stage !== 'prod'
 })
 
@@ -53,7 +42,7 @@ async function handler (lambdaEvent, context) {
 
 ```javascript
 function Router ({
-  logger, // @nike/logger-wrapper 
+  logger, // logger-wrapper 
   extractPathParameters = true, // merge proxy path parameters into event.pathParameters
   includeTraceId = true, // include TraceId header
   inluceErrorStack = false, // include stack traces with error responses
