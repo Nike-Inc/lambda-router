@@ -25,7 +25,7 @@ function Router ({
 } = {}) {
   const originalLogger = logger
 
-  if (originalLogger.events && originalLogger.setKey) {
+  if (originalLogger && originalLogger.events && originalLogger.setKey) {
     originalLogger.events.on('beforeHandler', (event, context) => {
       originalLogger.setKey('traceId', getTraceId(event, context))
     })
