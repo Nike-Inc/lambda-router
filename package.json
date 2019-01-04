@@ -36,8 +36,8 @@
   "standard": {
     "parser": "babel-eslint"
   },
-  "author": "Kevin Ninnemann",
-  "license": "UNLICENSED",
+  "author": "Tim Kye",
+  "license": "Apache-2",
   "dependencies": {
     "uuid": "^3.3.2"
   },
