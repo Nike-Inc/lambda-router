@@ -2,10 +2,12 @@
 
 A small and simple router to simplify managing routers in a NodeJS Lambda function.
 
+**NOTE**: Prior to v2 (there was no v1) this package was owned by another maintainer ([yu0819ki](https://github.com/yu0819ki)). You can find the [old lamdba-router package here](https://github.com/yu0819ki/lambda-router). This is effectively an entirely different package.
+
 # Installation
 
 ```
--- still working on the official package name
+npm install lambda-router
 ```
 
 # Quick Start
