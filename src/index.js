@@ -75,8 +75,8 @@ function Router ({
 
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
     let hasBody = event.body && typeof event.body === 'string'
-    let contentType = (event.headers['content-type'] || event.headers['Content-Type'])
-    let jsonBody = hasBody && event.headers && contentType === 'application/json')
+    let contentType = event.headers && (event.headers['content-type'] || event.headers['Content-Type'])
+    let jsonBody = hasBody && event.headers && contentType === 'application/json'
     let urlEncodedBody = hasBody && event.headers && contentType === 'application/x-www-form-urlencoded'
 
     // Parse and decode
