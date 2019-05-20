@@ -49,7 +49,7 @@ function Router ({
   includeTraceId = true, // include TraceId header
   inluceErrorStack = false, // include stack traces with error responses
   cors = true, // include CORS header, can be a string to set header value or true for '*'
-  parseBody = true, // merge parsed json body into event
+  parseBody = true, // parse JSON or URL encoded body into event
   decodeEvent = true // merge URI decoded parameters for path and querystring
 } = {}) {
   route: async (event, context) => Promise<{
@@ -62,6 +62,10 @@ function Router ({
   unknown: (event, context, path, method) => {}
 }
 ```
+
+## Body Parsing
+
+If `parseBody` is true and the request `Content-Type` is `application/json` or `application/x-www-form-urlencoded` the  `event.body` will be replaced with a parsed object, and `event.rawBody` will contain the original, unparsed body string.
 
 # Routes
 

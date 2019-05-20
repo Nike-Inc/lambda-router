@@ -1,5 +1,6 @@
 'use strict'
 
+const qs = require('querystring')
 const uuid = require('uuid/v4')
 const { loggerWrapper } = require('./logger')
 
@@ -73,12 +74,17 @@ function Router ({
     }
 
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
+    let hasBody = event.body && typeof event.body === 'string'
+    let contentType = (event.headers['content-type'] || event.headers['Content-Type'])
+    let jsonBody = hasBody && event.headers && contentType === 'application/json')
+    let urlEncodedBody = hasBody && event.headers && contentType === 'application/x-www-form-urlencoded'
 
     // Parse and decode
     try {
-      if (parseBody && event.body && typeof event.body === 'string') {
-        logger.debug('parsing body')
-        event.body = JSON.parse(event.body)
+      if (parseBody) {
+        event.rawBody = event.body
+        if (jsonBody) event.body = JSON.parse(event.body)
+        else if (urlEncodedBody) event.body = qs.parse(event.body)
       }
       if (decodeEvent) {
         logger.debug('decoding parameters')

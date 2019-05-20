@@ -1,7 +1,8 @@
 'use strict'
 
-let test = require('blue-tape')
-let { Router } = require('../src/index')
+const test = require('blue-tape')
+const { Router } = require('../src/index')
+const qs = require('querystring')
 
 test('GET adds a route to the routes list.', async t => {
   t.plan(1)
@@ -286,20 +287,29 @@ test('route errors still format when using custom response headers', async t => 
   t.equal(result.response.headers['Location'], 'something', 'custom header')
 })
 
-test('route parses body with default option', async t => {
+test('route parses json body with default option', async t => {
   t.plan(1)
   let router = Router()
   router.post('/route', ({ body }) => {
     t.equal(body.name, 'tim', 'parsed')
   })
-  await router.route({ body: JSON.stringify({ name: 'tim' }) }, {}, '/route', 'POST')
+  await router.route({ body: JSON.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
+})
+
+test('route parses url-encoded body with default option', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', ({ body }) => {
+    t.equal(body.name, 'tim', 'parsed')
+  })
+  await router.route({ body: qs.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, {}, '/route', 'POST')
 })
 
 test('route returns 400 for parse errors', async t => {
   t.plan(1)
   let router = Router()
   router.post('/route', ({ body }) => { })
-  let result = await router.route({ body: 'name' }, {}, '/route', 'POST')
+  let result = await router.route({ body: 'name', headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
   t.equal(result.response.statusCode, 400)
 })
 
@@ -309,7 +319,7 @@ test('route does not parse body with option', async t => {
   router.post('/route', ({ body }) => {
     t.equal(body, JSON.stringify({ name: 'tim' }), 'parsed')
   })
-  await router.route({ body: JSON.stringify({ name: 'tim' }) }, {}, '/route', 'POST')
+  await router.route({ body: JSON.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
 })
 
 test('route decodes parameters with default option', async t => {
