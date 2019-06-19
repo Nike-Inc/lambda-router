@@ -1,3 +1,4 @@
+/* eslint no-unused-vars:0 no-empty-function:0 */
 'use strict'
 
 const test = require('blue-tape')
@@ -19,11 +20,14 @@ test('GET matches with querystring.', async t => {
   router.get('/route', ({ queryStringParameters: { name } }) => {
     t.equal(name, 'tim', 'got qeury')
   })
-  await router.route({
-    path: '/route',
-    httpMethod: 'GET',
-    queryStringParameters: { name: 'tim' }
-  }, {})
+  await router.route(
+    {
+      path: '/route',
+      httpMethod: 'GET',
+      queryStringParameters: { name: 'tim' }
+    },
+    {}
+  )
 })
 
 test('POST adds a route to the routes list.', async t => {
@@ -76,11 +80,17 @@ test('unknown handler can use custom responses.', async t => {
   t.plan(2)
   let router = Router()
   router.unknown((event, { response }, path, method) => {
-    return response(404, { message: `You dun screwed up, now. ${path} doesn't exist!` })
+    return response(404, {
+      message: `You dun screwed up, now. ${path} doesn't exist!`
+    })
   })
   let result = await router.route({}, {}, '/route', 'POST')
   t.equal(result.response.statusCode, 404, 'status code')
-  t.equal(JSON.parse(result.response.body).message, `You dun screwed up, now. ${'/route'} doesn't exist!`, 'got message')
+  t.equal(
+    JSON.parse(result.response.body).message,
+    `You dun screwed up, now. ${'/route'} doesn't exist!`,
+    'got message'
+  )
 })
 
 test('GET routes with trialing slash', async t => {
@@ -190,9 +200,18 @@ test('route does not tokenize without option', t => {
   router.get('/get', failHandler)
   router.get('/get/{id}', getHandler)
 
-  router.route({ pathParameters: {}, resourcePath: '/get/123jkhl1khj23123', method: 'GET' }, {}).then(() => {
-    t.end()
-  })
+  router
+    .route(
+      {
+        pathParameters: {},
+        resourcePath: '/get/123jkhl1khj23123',
+        method: 'GET'
+      },
+      {}
+    )
+    .then(() => {
+      t.end()
+    })
 })
 
 test('if the handler throws an error, the router returns it', async t => {
@@ -209,7 +228,10 @@ test('if the handler throws an error, the router returns it', async t => {
 
   t.notOk(result.isOk, 'resposne is error')
   t.equal(result.response.statusCode, 500, 'status code')
-  t.ok(JSON.parse(result.response.body).message.indexOf('testing an error') !== -1, 'The proper error bubbled up.')
+  t.ok(
+    JSON.parse(result.response.body).message.indexOf('testing an error') !== -1,
+    'The proper error bubbled up.'
+  )
 })
 
 test('if the handler throws an error, the router formats it', async t => {
@@ -235,17 +257,19 @@ test('if the handler throws an error, the router formats it', async t => {
 test('if no route is defined the default router returns an error', async t => {
   let router = Router()
   let result = await router.route({ resourcePath: '/none', method: 'GET' }, {})
-  t.ok(JSON.parse(result.response.body).message.includes('No route specified'), 'The proper error bubbled up.')
+  t.ok(
+    JSON.parse(result.response.body).message.includes('No route specified'),
+    'The proper error bubbled up.'
+  )
 })
 
 test('route throws if context.response has already been set', async t => {
   t.plan(1)
   let router = Router()
-  router.post('/route', () => { })
-  await router.route({}, { response: true }, '/route', 'POST')
-    .catch(err => {
-      t.ok(err.message.includes('context.response'), 'already set')
-    })
+  router.post('/route', () => {})
+  await router.route({}, { response: true }, '/route', 'POST').catch(err => {
+    t.ok(err.message.includes('context.response'), 'already set')
+  })
 })
 
 test('route allows custom response status codes', async t => {
@@ -266,7 +290,7 @@ test('route allows custom response headers', async t => {
   let result = await router.route({}, {}, '/route', 'POST')
   t.equal(result.response.statusCode, 200, 'status code')
   t.equal(result.response.body, JSON.stringify({ message: 'success' }), 'body')
-  t.equal(result.response.headers['Location'], 'something', 'custom header')
+  t.equal(result.response.headers.Location, 'something', 'custom header')
 })
 
 test('route errors still format when using custom response headers', async t => {
@@ -284,7 +308,7 @@ test('route errors still format when using custom response headers', async t => 
   })
 
   let result = await router.route({ resourcePath: '/get', method: 'GET' }, {})
-  t.equal(result.response.headers['Location'], 'something', 'custom header')
+  t.equal(result.response.headers.Location, 'something', 'custom header')
 })
 
 test('route parses json body with default option', async t => {
@@ -293,7 +317,31 @@ test('route parses json body with default option', async t => {
   router.post('/route', ({ body }) => {
     t.equal(body.name, 'tim', 'parsed')
   })
-  await router.route({ body: JSON.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
+  await router.route(
+    {
+      body: JSON.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/json' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
+})
+
+test('route parses json body with assumeJson', async t => {
+  t.plan(1)
+  let router = Router({ assumeJson: true })
+  router.post('/route', ({ body }) => {
+    t.equal(body.name, 'tim', 'parsed')
+  })
+  await router.route(
+    {
+      body: JSON.stringify({ name: 'tim' })
+    },
+    {},
+    '/route',
+    'POST'
+  )
 })
 
 test('route parses url-encoded body with default option', async t => {
@@ -302,14 +350,27 @@ test('route parses url-encoded body with default option', async t => {
   router.post('/route', ({ body }) => {
     t.equal(body.name, 'tim', 'parsed')
   })
-  await router.route({ body: qs.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, {}, '/route', 'POST')
+  await router.route(
+    {
+      body: qs.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
 })
 
 test('route returns 400 for parse errors', async t => {
   t.plan(1)
   let router = Router()
-  router.post('/route', ({ body }) => { })
-  let result = await router.route({ body: 'name', headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
+  router.post('/route', ({ body }) => {})
+  let result = await router.route(
+    { body: 'name', headers: { 'Content-Type': 'application/json' } },
+    {},
+    '/route',
+    'POST'
+  )
   t.equal(result.response.statusCode, 400)
 })
 
@@ -319,7 +380,15 @@ test('route does not parse body with option', async t => {
   router.post('/route', ({ body }) => {
     t.equal(body, JSON.stringify({ name: 'tim' }), 'parsed')
   })
-  await router.route({ body: JSON.stringify({ name: 'tim' }), headers: { 'Content-Type': 'application/json' } }, {}, '/route', 'POST')
+  await router.route(
+    {
+      body: JSON.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/json' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
 })
 
 test('route decodes parameters with default option', async t => {
@@ -329,10 +398,15 @@ test('route decodes parameters with default option', async t => {
     t.equal(pathParameters.name, 'tim kye', 'parsed')
     t.equal(queryStringParameters.name, 'tim kye', 'parsed')
   })
-  await router.route({
-    pathParameters: { name: 'tim%20kye' },
-    queryStringParameters: { name: 'tim%20kye' }
-  }, {}, '/route', 'POST')
+  await router.route(
+    {
+      pathParameters: { name: 'tim%20kye' },
+      queryStringParameters: { name: 'tim%20kye' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
 })
 
 test('route does not decode parameters with option', async t => {
@@ -342,24 +416,32 @@ test('route does not decode parameters with option', async t => {
     t.equal(pathParameters.name, 'tim%20kye', 'parsed')
     t.equal(queryStringParameters.name, 'tim%20kye', 'parsed')
   })
-  await router.route({
-    pathParameters: { name: 'tim%20kye' },
-    queryStringParameters: { name: 'tim%20kye' }
-  }, {}, '/route', 'POST')
+  await router.route(
+    {
+      pathParameters: { name: 'tim%20kye' },
+      queryStringParameters: { name: 'tim%20kye' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
 })
 
 test('traceId is created', async t => {
   t.plan(1)
   let router = Router()
-  router.post('/route', () => { })
+  router.post('/route', () => {})
   let result = await router.route({}, {}, '/route', 'POST')
-  t.ok(result.response.headers['X-Correlation-Id'], 'trace id ' + result.response.headers['X-Correlation-Id'])
+  t.ok(
+    result.response.headers['X-Correlation-Id'],
+    'trace id ' + result.response.headers['X-Correlation-Id']
+  )
 })
 
 test('traceId is skipped if disabled', async t => {
   t.plan(1)
   let router = Router({ includeTraceId: false })
-  router.post('/route', () => { })
+  router.post('/route', () => {})
   let result = await router.route({}, {}, '/route', 'POST')
   t.notOk(result.response.headers['X-Correlation-Id'], 'no trace id')
 })
@@ -367,7 +449,7 @@ test('traceId is skipped if disabled', async t => {
 test('traceId is reused from event', async t => {
   t.plan(6)
   let router = Router()
-  router.post('/route', () => { })
+  router.post('/route', () => {})
   let traceId = '1234'
   let result = await router.route({ headers: { 'X-Trace-Id': traceId } }, {}, '/route', 'POST')
   t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
@@ -391,9 +473,9 @@ test('traceId is reused from event', async t => {
 test('traceId is reused from context', async t => {
   t.plan(1)
   let router = Router()
-  router.post('/route', () => { })
+  router.post('/route', () => {})
   let traceId = '1234'
-  let result = await router.route({ headers: { } }, { awsRequestId: traceId }, '/route', 'POST')
+  let result = await router.route({ headers: {} }, { awsRequestId: traceId }, '/route', 'POST')
   t.equal(result.response.headers['X-Correlation-Id'], traceId, 'trace id ')
 })
 

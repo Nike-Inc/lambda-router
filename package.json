@@ -11,17 +11,18 @@
   },
   "scripts": {
     "test:coverage": "nyc --check-coverage --lines 90 npm run test:unit && npm run report",
-    "test": "npm run style && npm run test:unit",
-    "test:unit": "blue-tape \"test/**/**.spec.js\" | tap-spec",
+    "test": "npm run check && npm run test:unit",
+    "test:unit": "blue-tape \"test/**/**.spec.js\" | tap-nirvana",
     "test:unit:watch": "npm run test:unit -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:unit -s\"",
     "test:watch": "npm run test:coverage -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:coverage -s\"",
-    "test:ci": "npm run style && blue-tape test/**/**.spec.js | tap-xunit > xunit.xml && blue-tape test/**/**.int.js | tap-xunit > xunit.xml && npm run test:coverage && npm run report:ci",
+    "test:ci": "npm run check && blue-tape test/**/**.spec.js | tap-xunit > xunit.xml && blue-tape test/**/**.int.js | tap-xunit > xunit.xml && npm run test:coverage && npm run report:ci",
     "report": "nyc report --reporter=html",
     "report:ci": "npm run report",
     "report:open": "npm run report && open coverage/index.html",
     "test:coverage:open": "npm run test:coverage && npm run report:open",
-    "style": "standard \"src/**/*.js\" | snazzy",
-    "style:fix": "standard \"src/**/*.js\" --fix",
+    "style": "prettier --config package.json  --write \"{src,test}/**/*.js\"",
+    "lint": "eslint -c package.json \"{src,test}/**/*.js\"",
+    "check": "npm run style && npm run lint",
     "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/"
   },
   "repository": {
@@ -42,15 +43,26 @@
     "uuid": "^3.3.2"
   },
   "devDependencies": {
+    "@kyeotic/eslint-config": "^0.9.0",
     "aws-sdk": "^2.4.8",
-    "babel-eslint": "^6.1.2",
+    "babel-eslint": "^10.0.2",
     "blue-tape": "^0.2.0",
     "chokidar-cli": "^1.2.0",
     "expect": "1.20.2",
     "jsdoc": "^3.4.3",
     "nyc": "latest",
-    "snazzy": "^5.0.0",
-    "standard": "8.1.0",
-    "tap-spec": "^4.1.1"
+    "prettier": "^1.18.2",
+    "tap-nirvana": "^1.1.0"
+  },
+  "prettier": {
+    "tabWidth": 2,
+    "semi": false,
+    "singleQuote": true,
+    "printWidth": 100
+  },
+  "eslintConfig": {
+    "extends": [
+      "@kyeotic/eslint-config/node"
+    ]
   }
 }

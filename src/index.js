@@ -13,7 +13,7 @@ module.exports = {
   createProxyResponse
 }
 
-function Router ({
+function Router({
   logger,
   extractPathParameters = true,
   // default to false, otherwise adding this would be a breaking change
@@ -23,6 +23,7 @@ function Router ({
   includeErrorStack = false,
   cors = true,
   parseBody = true,
+  assumeJson = false,
   decodeEvent = true
 } = {}) {
   const originalLogger = logger
@@ -55,7 +56,8 @@ function Router ({
     let headers = { ...defaultHeaders }
     // Safety Checks
     if (context.response) {
-      let message = 'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
+      let message =
+        'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
       logger.error(message)
       return Promise.reject(new Error(message))
     }
@@ -76,9 +78,10 @@ function Router ({
 
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
     let hasBody = event.body && typeof event.body === 'string'
-    let contentType = event.headers && (event.headers['content-type'] || event.headers['Content-Type'])
-    let jsonBody = hasBody && event.headers && contentType === 'application/json'
-    let urlEncodedBody = hasBody && event.headers && contentType === 'application/x-www-form-urlencoded'
+    let contentType =
+      event.headers && (event.headers['content-type'] || event.headers['Content-Type'])
+    let jsonBody = hasBody && (contentType === 'application/json' || (!contentType && assumeJson))
+    let urlEncodedBody = hasBody && contentType === 'application/x-www-form-urlencoded'
 
     // Parse and decode
     try {
@@ -94,19 +97,25 @@ function Router ({
       }
     } catch (error) {
       logger.error('route error', error.toString(), error.stack)
-      return createResponse(400, { message: 'Malformed request' }, defaultHeaders, route.path, requestPath)
+      return createResponse(
+        400,
+        { message: 'Malformed request' },
+        defaultHeaders,
+        route.path,
+        requestPath
+      )
     }
 
     // Route
     if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
       let result = await (route
-          ? route.handler(event, context)
-          : unknownRouteHandler(event, context, requestPath, httpMethod))
+        ? route.handler(event, context)
+        : unknownRouteHandler(event, context, requestPath, httpMethod))
       if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
         statusCode = result.statusCode
         body = result.body
-        headers = {...defaultHeaders, ...result.headers}
+        headers = { ...defaultHeaders, ...result.headers }
       } else {
         statusCode = 200
         body = result
@@ -132,14 +141,18 @@ function Router ({
     get: add.bind(null, 'GET'),
     post: add.bind(null, 'POST'),
     put: add.bind(null, 'PUT'),
-    'delete': add.bind(null, 'DELETE'),
-    unknown: (handler) => { unknownRouteHandler = handler },
-    formatError: (handler) => { onErrorFormat = handler },
+    delete: add.bind(null, 'DELETE'),
+    unknown: handler => {
+      unknownRouteHandler = handler
+    },
+    formatError: handler => {
+      onErrorFormat = handler
+    },
     route
   }
 }
 
-function customResponse (context, statusCode, body, headers) {
+function customResponse(context, statusCode, body, headers) {
   let response = {
     statusCode,
     body,
@@ -156,7 +169,7 @@ function customResponse (context, statusCode, body, headers) {
   return response
 }
 
-function getRoute (routes, event, eventPath, method, tokenizePathParts) {
+function getRoute(routes, event, eventPath, method, tokenizePathParts) {
   let route = routes.find(r => {
     return eventPath === r.path && method === r.method
   })
@@ -177,7 +190,7 @@ function getRoute (routes, event, eventPath, method, tokenizePathParts) {
   return route
 }
 
-function doPathPartsMatch (eventPath, route) {
+function doPathPartsMatch(eventPath, route) {
   const eventPathParts = eventPath.split('/')
   const routePathParts = route.path.split('/')
 
@@ -206,13 +219,13 @@ function doPathPartsMatch (eventPath, route) {
   return tokens
 }
 
-function defaultUnknownRoute (event, context, path, method) {
+function defaultUnknownRoute(event, context, path) {
   let error = new Error(`No route specified for path: ${path}`)
   error.statusCode = 404
   throw error
 }
 
-function createResponse (statusCode, body, headers, endpoint, uri) {
+function createResponse(statusCode, body, headers, endpoint, uri) {
   return {
     endpoint,
     uri,
@@ -221,34 +234,38 @@ function createResponse (statusCode, body, headers, endpoint, uri) {
   }
 }
 
-function createProxyResponse (statusCode, body, headers = {}) {
+function createProxyResponse(statusCode, body, headers = {}) {
   if (headers['Content-Type'] === undefined) headers['Content-Type'] = 'application/json'
   // output follows the format described here
   // http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-set-up-simple-proxy.html?shortFooter=true#api-gateway-simple-proxy-for-lambda-output-format
   return {
-    statusCode: statusCode,
+    statusCode,
     body: typeof body === 'object' ? JSON.stringify(body) : body,
     headers: { ...headers }
   }
 }
 
-function getTraceId (event, context) {
-  const traceId = event.headers &&
-    (event.headers['X-Trace-Id'] ||
-      event.headers['X-TRACE-ID'] ||
-      event.headers['x-trace-id'] ||
-      event.headers['X-Correlation-Id'] ||
-      event.headers['X-CORRELATION-ID'] ||
-      event.headers['x-correlation-id']) ||
+function getTraceId(event, context) {
+  const traceId =
+    (event.headers &&
+      (event.headers['X-Trace-Id'] ||
+        event.headers['X-TRACE-ID'] ||
+        event.headers['x-trace-id'] ||
+        event.headers['X-Correlation-Id'] ||
+        event.headers['X-CORRELATION-ID'] ||
+        event.headers['x-correlation-id'])) ||
     context.awsRequestId ||
     uuid()
   context[TRACE_ID] = traceId
   return traceId
 }
 
-function decodeProperties (obj) {
-  return obj && Object.keys(obj).reduce((r, key) => {
-    r[key] = decodeURIComponent(obj[key])
-    return r
-  }, {})
+function decodeProperties(obj) {
+  return (
+    obj &&
+    Object.keys(obj).reduce((r, key) => {
+      r[key] = decodeURIComponent(obj[key])
+      return r
+    }, {})
+  )
 }
