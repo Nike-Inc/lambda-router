@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [2.6.0] - 2019-06-19
+### Added
+- export `getTraceId`
+
 ## [2.5.1] - 2019-05-20
 ### Fixed
 - Syntax error

@@ -9,6 +9,7 @@ const TRACE_ID = Symbol('trace-id')
 
 module.exports = {
   Router,
+  getTraceId,
   createProxyResponse
 }
 
