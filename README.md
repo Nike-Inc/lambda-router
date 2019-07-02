@@ -15,7 +15,7 @@ npm install lambda-router
 const { Router } = require('lambda-router')
 const router = Router({
   logger: console // uses logger-wrapper.
-  inludeErrorStack: process.env.stage !== 'prod'
+  includeErrorStack: process.env.stage !== 'prod'
 })
 
 router.post('/v1/endpoint', service.create)
