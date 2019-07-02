@@ -413,7 +413,7 @@ test('context getters work inside routes', async t => {
   await router.route({}, context, '/route', 'POST')
 })
 
-test('beforeRoute function is called', async t => {
+test('middleware is called', async t => {
   t.plan(1)
 
   let beforeRouteStub = sinon.stub()
@@ -421,8 +421,9 @@ test('beforeRoute function is called', async t => {
   let context = {}
   let path = '/route'
   let method = 'GET'
-  let router = Router({ beforeRoute: beforeRouteStub })
+  let router = Router()
 
+  router.beforeRoute(beforeRouteStub)
   router.get(path, sinon.stub())
 
   await router.route(lambdaEvent, context, path, method)
@@ -433,7 +434,7 @@ test('beforeRoute function is called', async t => {
   )
 })
 
-test('throwing an error in beforeRoute creates error response', async t => {
+test('throwing an error in middleware creates error response', async t => {
   t.plan(2)
 
   let beforeRouteStub = () => {
@@ -442,9 +443,10 @@ test('throwing an error in beforeRoute creates error response', async t => {
     throw error
   }
   let path = '/route'
-  let router = Router({ beforeRoute: beforeRouteStub })
+  let router = Router()
   let routeHandler = sinon.stub()
 
+  router.beforeRoute(beforeRouteStub)
   router.get(path, routeHandler)
 
   const result = await router.route({}, {}, path, 'GET')
@@ -461,19 +463,16 @@ test('throwing an error in beforeRoute creates error response', async t => {
   )
 })
 
-test('beforeRoute can be an array of functions', async t => {
+test('multiple middleware functions are accepted', async t => {
   t.plan(2)
 
   let middlewareA = sinon.stub()
   let middlewareB = sinon.stub()
-  let router = Router({
-    beforeRoute: [
-      middlewareA,
-      middlewareB
-    ]
-  })
   let path = '/route'
+  let router = Router()
 
+  router.beforeRoute(middlewareA)
+  router.beforeRoute(middlewareB)
   router.get(path, sinon.stub())
 
   await router.route({}, {}, path, 'GET')
@@ -482,16 +481,17 @@ test('beforeRoute can be an array of functions', async t => {
   t.ok(middlewareB.called, 'second middleware was called')
 })
 
-test('beforeRoute can be asynchronous', async t => {
+test('middleware can be asynchronous', async t => {
   t.plan(1)
 
   let error = new Error('hello')
   error.statusCode = 400
 
   let beforeRouteStub = sinon.stub().rejects(error)
-  let router = Router({ beforeRoute: beforeRouteStub })
+  let router = Router()
   let path = '/route'
 
+  router.beforeRoute(beforeRouteStub)
   router.get(path, sinon.stub())
 
   const result = await router.route({}, {}, path, 'GET')
