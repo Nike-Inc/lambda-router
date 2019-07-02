@@ -22,7 +22,8 @@ function Router ({
   includeErrorStack = false,
   cors = true,
   parseBody = true,
-  decodeEvent = true
+  decodeEvent = true,
+  beforeRoute
 } = {}) {
   const originalLogger = logger
 
@@ -99,6 +100,13 @@ function Router ({
     // Route
     if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
+      if (typeof beforeRoute === 'function') beforeRoute = [beforeRoute]
+      if (Array.isArray(beforeRoute)) {
+        for (let fn of beforeRoute) {
+          await fn(event, context, requestPath, httpMethod)
+        }
+      }
+
       let result = await (route
           ? route.handler(event, context)
           : unknownRouteHandler(event, context, requestPath, httpMethod))
