@@ -51,6 +51,7 @@
     "expect": "1.20.2",
     "jsdoc": "^3.4.3",
     "nyc": "latest",
+<<<<<<< HEAD
     "prettier": "^1.18.2",
     "tap-nirvana": "^1.1.0"
   },
@@ -64,5 +65,11 @@
     "extends": [
       "@kyeotic/eslint-config/node"
     ]
+=======
+    "sinon": "^7.3.2",
+    "snazzy": "^5.0.0",
+    "standard": "8.1.0",
+    "tap-spec": "^4.1.1"
+>>>>>>> eee78439e175a3bbf7aa143584bb05b5a2332538
   }
 }
