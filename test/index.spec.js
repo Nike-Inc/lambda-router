@@ -533,16 +533,9 @@ test('throwing an error in middleware creates error response', async t => {
 
   const result = await router.route({}, {}, path, 'GET')
 
-  t.equal(
-    result.response.statusCode,
-    400,
-    'includes 400 statusCode'
-  )
+  t.equal(result.response.statusCode, 400, 'includes 400 statusCode')
 
-  t.ok(
-    routeHandler.notCalled,
-    'route handler was not called'
-  )
+  t.ok(routeHandler.notCalled, 'route handler was not called')
 })
 
 test('multiple middleware functions are accepted', async t => {

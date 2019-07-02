@@ -147,26 +147,17 @@ function Router({
 
   // Bound router functions
   return {
-<<<<<<< HEAD
-    get: add.bind(null, 'GET'),
-    post: add.bind(null, 'POST'),
-    put: add.bind(null, 'PUT'),
-    delete: add.bind(null, 'DELETE'),
+    beforeRoute: addMiddleware,
+    get: addRoute.bind(null, 'GET'),
+    post: addRoute.bind(null, 'POST'),
+    put: addRoute.bind(null, 'PUT'),
+    delete: addRoute.bind(null, 'DELETE'),
     unknown: handler => {
       unknownRouteHandler = handler
     },
     formatError: handler => {
       onErrorFormat = handler
     },
-=======
-    beforeRoute: addMiddleware,
-    get: addRoute.bind(null, 'GET'),
-    post: addRoute.bind(null, 'POST'),
-    put: addRoute.bind(null, 'PUT'),
-    'delete': addRoute.bind(null, 'DELETE'),
-    unknown: (handler) => { unknownRouteHandler = handler },
-    formatError: (handler) => { onErrorFormat = handler },
->>>>>>> eee78439e175a3bbf7aa143584bb05b5a2332538
     route
   }
 }
