@@ -15,7 +15,7 @@ npm install lambda-router
 const { Router } = require('lambda-router')
 const router = Router({
   logger: console // uses logger-wrapper.
-  inluceErrorStack: process.env.stage !== 'prod'
+  includeErrorStack: process.env.stage !== 'prod'
 })
 
 router.post('/v1/endpoint', service.create)
@@ -44,7 +44,7 @@ async function handler (lambdaEvent, context) {
 
 ```javascript
 function Router ({
-  logger, // logger-wrapper 
+  logger, // logger-wrapper
   extractPathParameters = true, // merge proxy path parameters into event.pathParameters
   includeTraceId = true, // include TraceId header
   inluceErrorStack = false, // include stack traces with error responses
@@ -60,6 +60,7 @@ function Router ({
   }
   get|post|put|delete: async (pattern, handler) => {}
   unknown: (event, context, path, method) => {}
+  beforeRoute: async (event, context, path, method)
 }
 ```
 
@@ -69,7 +70,7 @@ If `parseBody` is true and the request `Content-Type` is `application/json` or `
 
 # Routes
 
-Route's can be registered with any of the http verb methods.
+Routes can be registered with any of the http verb methods.
 
 `router.[get|post|put|delete](routePattern: string, handler: (event, context) => Object|Promise)`
 
@@ -85,6 +86,31 @@ Route handlers that return an object will get a default status code of 200, and 
 ## The Unknown Handler
 
 When no route is matched the unknown handler is invoked. The default unknown handler will return a canned response containing the unmatched path, with a 404. You can replace the unknown handler by provider your own to `router.unknown`. This handler will function as a normal handler, returning a 200 unless it throws an error. Since errors default to status code 500, you should probably manually set the status code to 404.
+
+## Middleware
+
+You can use the `beforeRoute` method to define middleware that will run before attempting to match a registered route. This is useful for mutating the incoming event or context, or for running validations at the global level:
+
+```js
+function redactAuthToken (event, context, path, method) {
+  event.headers['Authorization'] = '--redacted'
+}
+
+function validateContentType (event, context, path, method) {
+  if (!event.headers['Content-Type'].includes('application/json')) {
+    const error = new Error('Content-Type must be JSON')
+    error.statusCode = 400
+    throw error
+  }
+}
+
+// these will both run before any route matching occurs
+router.beforeRoute(redactAuthToken)
+router.beforeRoute(validateContentType)
+
+router.post('/v1/endpoint', service.create)
+router.get('/v1/endpoint/{id}', service.get)
+```
 
 # Custom Response
 

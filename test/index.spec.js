@@ -1,8 +1,9 @@
 'use strict'
 
-const test = require('blue-tape')
-const { Router } = require('../src/index')
 const qs = require('querystring')
+const test = require('blue-tape')
+const sinon = require('sinon')
+const { Router } = require('../src/index')
 
 test('GET adds a route to the routes list.', async t => {
   t.plan(1)
@@ -410,4 +411,90 @@ test('context getters work inside routes', async t => {
     get: () => 'tim'
   })
   await router.route({}, context, '/route', 'POST')
+})
+
+test('middleware is called', async t => {
+  t.plan(1)
+
+  let beforeRouteStub = sinon.stub()
+  let lambdaEvent = {}
+  let context = {}
+  let path = '/route'
+  let method = 'GET'
+  let router = Router()
+
+  router.beforeRoute(beforeRouteStub)
+  router.get(path, sinon.stub())
+
+  await router.route(lambdaEvent, context, path, method)
+
+  t.ok(
+    beforeRouteStub.calledWith(lambdaEvent, context, path, method),
+    'function was called with event, context, path, method'
+  )
+})
+
+test('throwing an error in middleware creates error response', async t => {
+  t.plan(2)
+
+  let beforeRouteStub = () => {
+    const error = new Error()
+    error.statusCode = 400
+    throw error
+  }
+  let path = '/route'
+  let router = Router()
+  let routeHandler = sinon.stub()
+
+  router.beforeRoute(beforeRouteStub)
+  router.get(path, routeHandler)
+
+  const result = await router.route({}, {}, path, 'GET')
+
+  t.equal(
+    result.response.statusCode,
+    400,
+    'includes 400 statusCode'
+  )
+
+  t.ok(
+    routeHandler.notCalled,
+    'route handler was not called'
+  )
+})
+
+test('multiple middleware functions are accepted', async t => {
+  t.plan(2)
+
+  let middlewareA = sinon.stub()
+  let middlewareB = sinon.stub()
+  let path = '/route'
+  let router = Router()
+
+  router.beforeRoute(middlewareA)
+  router.beforeRoute(middlewareB)
+  router.get(path, sinon.stub())
+
+  await router.route({}, {}, path, 'GET')
+
+  t.ok(middlewareA.called, 'first middleware was called')
+  t.ok(middlewareB.called, 'second middleware was called')
+})
+
+test('middleware can be asynchronous', async t => {
+  t.plan(1)
+
+  let error = new Error('hello')
+  error.statusCode = 400
+
+  let beforeRouteStub = sinon.stub().rejects(error)
+  let router = Router()
+  let path = '/route'
+
+  router.beforeRoute(beforeRouteStub)
+  router.get(path, sinon.stub())
+
+  const result = await router.route({}, {}, path, 'GET')
+
+  t.equal(result.response.statusCode, 400, 'includes 400 statusCode')
 })

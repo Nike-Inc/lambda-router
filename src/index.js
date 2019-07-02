@@ -34,8 +34,13 @@ function Router ({
 
   logger = loggerWrapper(logger)
   const routes = []
-  const add = (method, path, handler) => {
+  const addRoute = (method, path, handler) => {
     routes.push({ method, path, handler })
+  }
+
+  const middleware = []
+  const addMiddleware = handler => {
+    if (typeof handler === 'function') middleware.push(handler)
   }
 
   let unknownRouteHandler = defaultUnknownRoute
@@ -99,6 +104,10 @@ function Router ({
     // Route
     if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
+      for (let fn of middleware) {
+        await fn(event, context, requestPath, httpMethod)
+      }
+
       let result = await (route
           ? route.handler(event, context)
           : unknownRouteHandler(event, context, requestPath, httpMethod))
@@ -128,10 +137,11 @@ function Router ({
 
   // Bound router functions
   return {
-    get: add.bind(null, 'GET'),
-    post: add.bind(null, 'POST'),
-    put: add.bind(null, 'PUT'),
-    'delete': add.bind(null, 'DELETE'),
+    beforeRoute: addMiddleware,
+    get: addRoute.bind(null, 'GET'),
+    post: addRoute.bind(null, 'POST'),
+    put: addRoute.bind(null, 'PUT'),
+    'delete': addRoute.bind(null, 'DELETE'),
     unknown: (handler) => { unknownRouteHandler = handler },
     formatError: (handler) => { onErrorFormat = handler },
     route
