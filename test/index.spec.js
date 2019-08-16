@@ -573,3 +573,39 @@ test('middleware can be asynchronous', async t => {
 
   t.equal(result.response.statusCode, 400, 'includes 400 statusCode')
 })
+
+test('route does not normalize headers by default', async t => {
+  t.plan(2)
+  let router = Router({})
+  router.post('/route', ({ headers: { 'Content-Type': unnormal, 'content-type': normal } }) => {
+    t.equal(unnormal, 'application/json', 'unnormalized')
+    t.equal(normal, undefined, 'normalized')
+  })
+  await router.route(
+    {
+      body: JSON.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/json' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
+})
+
+test('route normalizes headers with an option', async t => {
+  t.plan(2)
+  let router = Router({ normalizeHeaders: true })
+  router.post('/route', ({ headers: { 'Content-Type': unnormal, 'content-type': normal } }) => {
+    t.equal(normal, 'application/json', 'normalized')
+    t.equal(unnormal, undefined, 'unnormalized')
+  })
+  await router.route(
+    {
+      body: JSON.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/json' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
+})
