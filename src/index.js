@@ -24,7 +24,10 @@ function Router({
   cors = true,
   parseBody = true,
   assumeJson = false,
-  decodeEvent = true
+  decodeEvent = true,
+  // default to false, otherwise adding this would be a breaking change
+  // TODO: v3, default true
+  normalizeHeaders = false
 } = {}) {
   const originalLogger = logger
 
@@ -109,6 +112,15 @@ function Router({
         route.path,
         requestPath
       )
+    }
+
+    // HTTP/2 says headers all always lowercase
+    if (normalizeHeaders) {
+      event.rawHeaders = event.headers
+      event.headers = Object.keys(event.headers).reduce((headers, name) => {
+        headers[name.toLowerCase()] = event.headers[name]
+        return headers
+      }, {})
     }
 
     // Route
