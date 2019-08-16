@@ -50,7 +50,8 @@ function Router ({
   inluceErrorStack = false, // include stack traces with error responses
   cors = true, // include CORS header, can be a string to set header value or true for '*'
   parseBody = true, // parse JSON or URL encoded body into event
-  decodeEvent = true // merge URI decoded parameters for path and querystring
+  decodeEvent = true, // merge URI decoded parameters for path and querystring
+  normalizeHeaders = false // If true all headers will be lowercased, and the original headers will be placed on event.rawHeaders
 } = {}) {
   route: async (event, context) => Promise<{
     isOk,
