@@ -19,7 +19,7 @@ function Router({
   // default to false, otherwise adding this would be a breaking change
   // TODO: v3, default true
   trimTrailingSlash = false,
-  includeTraceId = true, // TODO: v3, remove. This has been pulled into chronicle instead
+  includeTraceId = true,
   includeErrorStack = false,
   cors = true,
   parseBody = true,
@@ -84,6 +84,15 @@ function Router({
       requestPath = requestPath.replace(/\/$/, '')
     }
 
+    // HTTP/2 says headers all always lowercase
+    if (normalizeHeaders) {
+      event.rawHeaders = event.headers
+      event.headers = Object.keys(event.headers).reduce((headers, name) => {
+        headers[name.toLowerCase()] = event.headers[name]
+        return headers
+      }, {})
+    }
+
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
     let hasBody = event.body && typeof event.body === 'string'
     let contentType =
@@ -112,15 +121,6 @@ function Router({
         route.path,
         requestPath
       )
-    }
-
-    // HTTP/2 says headers all always lowercase
-    if (normalizeHeaders) {
-      event.rawHeaders = event.headers
-      event.headers = Object.keys(event.headers).reduce((headers, name) => {
-        headers[name.toLowerCase()] = event.headers[name]
-        return headers
-      }, {})
     }
 
     // Route
