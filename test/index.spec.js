@@ -362,6 +362,23 @@ test('route parses url-encoded body with default option', async t => {
   )
 })
 
+test('route parses url-encoded body with multi-typed content header', async t => {
+  t.plan(1)
+  let router = Router()
+  router.post('/route', ({ body }) => {
+    t.equal(body.name, 'tim', 'parsed')
+  })
+  await router.route(
+    {
+      body: qs.stringify({ name: 'tim' }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
+    },
+    {},
+    '/route',
+    'POST'
+  )
+})
+
 test('route returns 400 for parse errors', async t => {
   t.plan(1)
   let router = Router()

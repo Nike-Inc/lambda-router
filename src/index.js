@@ -61,6 +61,7 @@ function Router({
 
   const route = async (event, context, requestPath, httpMethod) => {
     let statusCode, body
+    let requestHeaders = normalizeRequestHeaders(event.headers)
     let headers = { ...defaultHeaders }
     // Safety Checks
     if (context.response) {
@@ -87,18 +88,15 @@ function Router({
     // HTTP/2 says headers all always lowercase
     if (normalizeHeaders) {
       event.rawHeaders = event.headers
-      event.headers = Object.keys(event.headers).reduce((headers, name) => {
-        headers[name.toLowerCase()] = event.headers[name]
-        return headers
-      }, {})
+      event.headers = requestHeaders
     }
 
     let route = getRoute(routes, event, requestPath, httpMethod, extractPathParameters)
     let hasBody = event.body && typeof event.body === 'string'
-    let contentType =
-      event.headers && (event.headers['content-type'] || event.headers['Content-Type'])
-    let jsonBody = hasBody && (contentType === 'application/json' || (!contentType && assumeJson))
-    let urlEncodedBody = hasBody && contentType === 'application/x-www-form-urlencoded'
+    let contentType = requestHeaders && requestHeaders['content-type']
+    let jsonBody =
+      hasBody && (hasHeaderValue(contentType, 'application/json') || (!contentType && assumeJson))
+    let urlEncodedBody = hasBody && hasHeaderValue(contentType, 'application/x-www-form-urlencoded')
 
     // Parse and decode
     try {
@@ -290,4 +288,20 @@ function decodeProperties(obj) {
       return r
     }, {})
   )
+}
+
+function hasHeaderValue(header, value) {
+  if (!header || !value) return false
+  header = header.toLowerCase()
+  value = value.toLowerCase()
+  if (header === value) return true
+  let headerParts = header.split(';')
+  return headerParts.includes(value)
+}
+
+function normalizeRequestHeaders(reqHeaders = {}) {
+  return Object.keys(reqHeaders).reduce((headers, name) => {
+    headers[name.toLowerCase()] = reqHeaders[name]
+    return headers
+  }, {})
 }
