@@ -58,6 +58,15 @@ test('DELETE adds a route to the routes list.', async t => {
   await router.route({}, {}, '/route', 'DELETE')
 })
 
+test('PATCH adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.patch('/route', () => {
+    t.pass('called patch')
+  })
+  await router.route({}, {}, '/route', 'PATCH')
+})
+
 test('Unknown route returns error.', async t => {
   t.plan(4)
   let router = Router()
