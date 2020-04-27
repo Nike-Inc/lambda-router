@@ -162,6 +162,7 @@ function Router({
     post: addRoute.bind(null, 'POST'),
     put: addRoute.bind(null, 'PUT'),
     delete: addRoute.bind(null, 'DELETE'),
+    patch: addRoute.bind(null, 'PATCH'),
     unknown: handler => {
       unknownRouteHandler = handler
     },
