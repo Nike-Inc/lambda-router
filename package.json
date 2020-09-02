@@ -10,19 +10,17 @@
     "node": ">=8.10"
   },
   "scripts": {
-    "test:coverage": "nyc --check-coverage --lines 90 npm run test:unit && npm run report",
-    "test": "npm run check && npm run test:unit",
-    "test:unit": "blue-tape \"test/**/**.spec.js\" | tap-nirvana",
-    "test:unit:watch": "npm run test:unit -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:unit -s\"",
-    "test:watch": "npm run test:coverage -s & chokidar 'src/**/*.js' 'test/**/*.spec.js' --polling -c \"npm run test:coverage -s\"",
-    "test:ci": "npm run check && blue-tape test/**/**.spec.js | tap-xunit > xunit.xml && blue-tape test/**/**.int.js | tap-xunit > xunit.xml && npm run test:coverage && npm run report:ci",
-    "report": "nyc report --reporter=html",
-    "report:ci": "npm run report",
-    "report:open": "npm run report && open coverage/index.html",
-    "test:coverage:open": "npm run test:coverage && npm run report:open",
-    "style": "prettier --config package.json  --write \"{src,test}/**/*.js\"",
     "lint": "eslint -c package.json \"{src,test}/**/*.js\"",
     "check": "npm run style && npm run lint",
+    "test": "npm run check && npm run test:unit",
+    "test:unit": "ava",
+    "test:watch": "ava --watch",
+    "test:coverage": "nyc --check-coverage --lines 80 ava",
+    "test:coverage:open": "npm run test:coverage; npm run report:open",
+    "report": "nyc report --reporter=html",
+    "report:open": "npm run report && open coverage/index.html",
+    "test:ci": "npm run check && ava --tap | tap-xunit > ~/reports/ava.xml && npm run test:coverage && npm run report:ci",
+    "style": "prettier --config package.json  --write \"{src,test}/**/*.js\"",
     "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/"
   },
   "repository": {
@@ -34,9 +32,6 @@
     "lambda",
     "router"
   ],
-  "standard": {
-    "parser": "babel-eslint"
-  },
   "author": "Tim Kye",
   "license": "Apache-2",
   "dependencies": {
@@ -44,19 +39,15 @@
   },
   "devDependencies": {
     "@kyeotic/eslint-config": "^0.9.0",
+    "ava": "^3.12.1",
     "aws-sdk": "^2.4.8",
-    "babel-eslint": "^10.0.2",
-    "blue-tape": "^0.2.0",
-    "chokidar-cli": "^1.2.0",
+    "chokidar-cli": "^2.1.0",
+    "eslint": "^5.16.0",
     "expect": "1.20.2",
     "jsdoc": "^3.4.3",
     "nyc": "latest",
     "prettier": "^1.18.2",
-    "tap-nirvana": "^1.1.0",
-    "sinon": "^7.3.2",
-    "snazzy": "^5.0.0",
-    "standard": "8.1.0",
-    "tap-spec": "^4.1.1"
+    "sinon": "^7.3.2"
   },
   "prettier": {
     "tabWidth": 2,
