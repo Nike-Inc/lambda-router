@@ -4,7 +4,7 @@
 const test = require('ava')
 const qs = require('querystring')
 const sinon = require('sinon')
-const { Router } = require('../src/index')
+const { Router } = require('../src/router')
 
 test('GET adds a route to the routes list.', async t => {
   t.plan(1)
