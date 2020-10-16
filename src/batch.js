@@ -1,8 +1,5 @@
 'use strict'
 
-const router = require('lambda-router/src/router')
-const { expectation } = require('sinon')
-
 const { HttpError } = require('./httpError')
 
 const batchDefaultConfig = {
