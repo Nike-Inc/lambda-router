@@ -43,13 +43,6 @@ function Router({
   const addRoute = (method, path, handler) => {
     routes.push({ method, path, handler })
   }
-  const addBatchRoute = (path, config) => {
-    routes.push({
-      method: 'POST',
-      path,
-      handler: batchHandler.bind(null, { routes, config, extractPathParameters })
-    })
-  }
 
   const middleware = []
   const addMiddleware = handler => {
@@ -163,6 +156,14 @@ function Router({
     return createResponse(statusCode, body, headers, route && route.path, requestPath)
   }
 
+  const addBatchRoute = (path, config) => {
+    routes.push({
+      method: 'POST',
+      path,
+      handler: batchHandler.bind(null, { route, config })
+    })
+  }
+  
   // Bound router functions
   return {
     beforeRoute: addMiddleware,

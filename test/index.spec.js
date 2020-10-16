@@ -67,6 +67,15 @@ test('PATCH adds a route to the routes list.', async t => {
   await router.route({}, {}, '/route', 'PATCH')
 })
 
+test('BATCH adds a route to the routes list.', async t => {
+  t.plan(1)
+  let router = Router()
+  router.batch('/$batch', () => {
+    t.pass('called batch')
+  })
+  await router.route({}, {}, '/$batch', 'POST')
+})
+
 test('Unknown route returns error.', async t => {
   t.plan(4)
   let router = Router()
