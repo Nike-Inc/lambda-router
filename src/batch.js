@@ -108,8 +108,7 @@ async function executeRequest(config, route, event, request) {
     pathParameters: {
       proxy: urlAndQueryString[0].substring(1)
     },
-    multiValueQueryStringParameters: composeQueryStringParametersFromUrl(request.url),
-    _json: true
+    multiValueQueryStringParameters: composeQueryStringParametersFromUrl(request.url)
   }
 
   //Allow consumers to define a custom handler
