@@ -11,62 +11,74 @@ module.exports = {
   batchHandler
 }
 
-async function batchHandler({ route, config }, event, context) {
+async function batchHandler({ route, config }, event) {
   config = { ...batchDefaultConfig, ...config }
   const body = event.body
 
   // Validate
   validateBatchRequest(body, config.maxBatchSize)
 
-  // build graph of requests
-  const orderedRequests = tSort(body.requests)
-  const { asyncRequests, syncRequests } = splitAsyncRequests(orderedRequests)
+  //Traverse dependency tree and execute requests
+  let requests = [...body.requests]
+  const complete = []
+  const responses = []
+  do {
+    let toExecute
+    ;[toExecute, requests] = requests.reduce(
+      (arr, req) => {
+        if (!req.dependsOn || req.dependsOn.every(dependency => complete.includes(dependency))) {
+          arr[0].push(req)
+        } else {
+          arr[1].push(req)
+        }
+        return arr
+      },
+      [[], []]
+    )
 
-  // execute requests
-  const results = await Promise.all([
-    (async () => {
-      const syncResults = []
-      for (let req of syncRequests) {
-        syncResults.push(await executeRequest(config, route, event, req))
-      }
-      return syncResults
-    })(),
-    ...asyncRequests.map(executeRequest.bind(null, config, route, event))
-  ])
-
-  // return response
-  return {
-    statusCode: 200,
-    body:{ responses: results.map((result, index) => {
-      if (index === 0){
-        return result.map((result, index) => {
+    const results = await Promise.all(
+      toExecute.map(req => {
+        return executeRequest(config, route, event, req).catch(err => {
           return {
-            id: syncRequests[index].id,
-            status: result.statusCode,
-            body: result.body ? JSON.parse(result.body) : undefined,
-            headers: result.headers
+            statusCode: 500,
+            body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
           }
         })
-      }
-      return {
-        id: asyncRequests[index - 1].id,
-        status: result.statusCode,
-        body: result.body ? JSON.parse(result.body) : undefined,
-        headers: result.headers
-      }
-    })},
-    headers:{}
+      })
+    )
+
+    responses.push(
+      ...results.map((result, index) => {
+        complete.push(toExecute[index].id)
+        return {
+          id: toExecute[index].id,
+          status: result.statusCode,
+          body: result.body ? JSON.parse(result.body) : undefined,
+          headers: result.headers
+        }
+      })
+    )
+
+    //Saftey Check; Shouldn't happen, but if it were to we'd be stuck in an infinite loop
+    if (toExecute.length === 0) {
+      throw new HttpError(400, `Invalid dependency chain`)
+    }
+  } while (requests.length > 0)
+
+  return {
+    statusCode: 200,
+    body: responses,
+    headers: {}
   }
 }
 
-async function executeRequest(config, route, event, request) {
-  //Parse url into pathParameters and multiValueQueryStringParameters formats
-  const urlAndQuerystring = request.url.split('?')
+function composeQueryStringParametersFromUrl(url) {
+  const urlAndQuerystring = url.split('?')
   let queryStringParameters = {}
   if (urlAndQuerystring.length > 1) {
     const queryStringParams = urlAndQuerystring[1]
     const keys = queryStringParams.split('&')
-    const queryStrings = keys.map((k) => k.split('='))
+    const queryStrings = keys.map(k => k.split('='))
 
     for (let queryString of queryStrings) {
       if (queryStringParameters[queryString[0]]) {
@@ -76,56 +88,39 @@ async function executeRequest(config, route, event, request) {
       }
     }
   }
+  return queryStringParameters
+}
+
+async function executeRequest(config, route, event, request) {
+  const urlAndQueryString = request.url.split('?')
+
+  const authorizationHeader = Object.keys(event.headers).find(
+    header => header.toLowerCase() === 'authorization'
+  )
 
   //Compose event to appear as native AWS event
-  let childEvent = { 
+  let childEvent = {
     ...event,
     httpMethod: request.method,
-    headers: {...normalizeRequestHeaders(request.headers), authorization: event.headers.authorization},
+    headers: { ...request.headers, [authorizationHeader]: event.headers[authorizationHeader] },
     body: request.body,
-    path: request.url,
-    pathParameters: { 
-      proxy: urlAndQuerystring[0].split('/').splice(2).join('/') 
+    path: urlAndQueryString[0],
+    pathParameters: {
+      proxy: urlAndQueryString[0].substring(1)
     },
-    multiValueQueryStringParameters: queryStringParameters,
+    multiValueQueryStringParameters: composeQueryStringParametersFromUrl(request.url),
     _json: true
   }
 
-  //Allow consumers to define a custom handler 
-  if (config.handler){
+  //Allow consumers to define a custom handler
+  if (config.handler) {
     return await config.handler(childEvent, {})
   }
 
   return await route(childEvent, {})
 }
 
-function normalizeRequestHeaders(reqHeaders = {}) {
-  return Object.keys(reqHeaders).reduce((headers, name) => {
-    headers[name.toLowerCase()] = reqHeaders[name]
-    return headers
-  }, {})
-}
-
-function splitAsyncRequests(orderedRequests) {
-  const asyncRequests = []
-  let syncRequests = []
-  for (let i = 0; i < orderedRequests.length; i++) {
-    if (orderedRequests[i].dependsOn.length > 0) {
-      syncRequests.push(...orderedRequests.splice(i))
-      break
-    }
-
-    if (!orderedRequests.some(req => req.dependsOn.includes(orderedRequests[i].id))) {
-      asyncRequests.push(orderedRequests[i])
-    } else {
-      syncRequests.push(orderedRequests[i])
-    }
-  }
-  return { asyncRequests, syncRequests }
-}
-
-//Depth-first topological sort
-function tSort(requests) {
+function validateDependencyChain(requests) {
   const dependencies = requests.reduce((obj, req) => {
     obj[req.id] = { dependsOn: [], ...req }
     return obj
@@ -136,7 +131,6 @@ function tSort(requests) {
 
   const sorted = new Set()
   const result = []
-
   do {
     length = keys.length
     items = []
@@ -152,67 +146,78 @@ function tSort(requests) {
     items.forEach(i => sorted.add(i))
   } while (keys.length && keys.length !== length)
 
-  if (keys.length > 0) {
-    throw new HttpError(400, `invalid body; unable to resolve execution order `+
-      `due to circular dependency chain(s) involving: (${keys.join(', ')})`)
-  }
-
-  return result.map(res => dependencies[res])
+  HttpError.assert(
+    keys.length === 0,
+    400,
+    `invalid body; unable to resolve execution order ` +
+      `due to circular dependency chain(s) involving: (${keys.join(', ')})`
+  )
 }
 
-function validateBatchRequest(body, maxBatchSize){
+function validateBatchRequest(body, maxBatchSize) {
   // validate json body has been parsed
-  if (typeof body !== 'object' || body === null){
-    throw new HttpError(400, `invalid body; expected object`)
-  }
-
+  HttpError.assert(typeof body === 'object' && body !== null, 400, `invalid body; expected object`)
   // validate body.requests has array of requests
-  if (!body.requests || !Array.isArray(body.requests)){
-    throw new HttpError(400, `invalid body; expected requests to be an array`)
-  }
-
-  if (body.requests.length > maxBatchSize){
-    throw new HttpError(400, `invalid body; max number of requests exceeded (${maxBatchSize})`)
-  }
+  HttpError.assert(
+    body.requests && Array.isArray(body.requests),
+    400,
+    `invalid body; expected requests to be an array`
+  )
+  HttpError.assert(
+    body.requests.length !== 0,
+    400,
+    `invalid body; requests must contain at least one element`
+  )
+  HttpError.assert(
+    body.requests.length <= maxBatchSize,
+    400,
+    `invalid body; max number of requests exceeded (${maxBatchSize})`
+  )
 
   // validate each body.requests[]
   const ids = body.requests.map(req => req.id)
-  for(let i = 0; i < body.requests.length; i++){
+  for (let i = 0; i < body.requests.length; i++) {
     const request = body.requests[i]
-    if (!request.id){
-      throw new HttpError(400, `invalid body; requests[${i}].id required`)
-    }
-    if (typeof request.id !== 'string' && !(request.id instanceof String)){
-      throw new HttpError(400, `invalid body; requests[${i}].id must be a string`)
-    }
-
-    if (!request.method){
-      throw new HttpError(400, `invalid body; requests[${i}].method required`)
-    }
-    if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method)){
-      throw new HttpError(400, `invalid body; requests[${i}].method must be one of ( GET | POST | PUT | PATCH | DELETE )`)
-    }
-
-    if (!request.url){
-      throw new HttpError(400, `invalid body; requests[${i}].url required`)
-    }
-    if (typeof request.id !== 'string' && !(request.id instanceof String)){
-      throw new HttpError(400, `invalid body; requests[${i}].url must be a string`)
-    }
-
-    if (request.headers && request.headers.authorization){
-      throw new HttpError(400, `invalid body; requests[${i}].headers.authorization can not be supplied`)
-    }
-
-    if (request.dependsOn){
-      if (!Array.isArray(request.dependsOn)){
-        throw new HttpError(400, `invalid body; requests[${i}].dependsOn must be an array`)
-      }
-
+    HttpError.assert(request.id, 400, `invalid body; requests[${i}].id required`)
+    HttpError.assert(
+      typeof request.id === 'string' || request.id instanceof String,
+      400,
+      `invalid body; requests[${i}].id must be a string`
+    )
+    HttpError.assert(request.method, 400, `invalid body; requests[${i}].method required`)
+    HttpError.assert(
+      ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method),
+      400,
+      `invalid body; requests[${i}].method must be one of ( GET | POST | PUT | PATCH | DELETE )`
+    )
+    HttpError.assert(request.url, 400, `invalid body; requests[${i}].url required`)
+    HttpError.assert(
+      typeof request.url === 'string' || request.url instanceof String,
+      400,
+      `invalid body; requests[${i}].url must be a string`
+    )
+    HttpError.assert(
+      !request.headers ||
+        !Object.keys(request.headers).some(header => header.toLowerCase() === 'authorization'),
+      400,
+      `invalid body; requests[${i}].headers.authorization can not be supplied`
+    )
+    if (request.dependsOn) {
+      HttpError.assert(
+        Array.isArray(request.dependsOn),
+        400,
+        `invalid body; requests[${i}].dependsOn must be an array`
+      )
       const invalidDependsOn = request.dependsOn.filter(depend => !ids.includes(depend))
-      if (invalidDependsOn.length > 0){
-        throw new HttpError(400, `invalid body; requests[${i}].dependsOn references invalid id(s): ${invalidDependsOn.join(', ')}`)
-      }
+      HttpError.assert(
+        invalidDependsOn.length === 0,
+        400,
+        `invalid body; requests[${i}].dependsOn references invalid id(s): ${invalidDependsOn.join(
+          ', '
+        )}`
+      )
     }
   }
+
+  validateDependencyChain(body.requests)
 }

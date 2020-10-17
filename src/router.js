@@ -163,7 +163,7 @@ function Router({
       handler: batchHandler.bind(null, { route, config })
     })
   }
-  
+
   // Bound router functions
   return {
     beforeRoute: addMiddleware,
