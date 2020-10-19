@@ -3,15 +3,14 @@
 const { HttpError } = require('./httpError')
 
 const batchDefaultConfig = {
-  maxBatchSize: 20,
-  handler: undefined
+  maxBatchSize: 20
 }
 
 module.exports = {
   batchHandler
 }
 
-async function batchHandler({ route, config }, event) {
+async function batchHandler({ route, config }, event, context) {
   config = { ...batchDefaultConfig, ...config }
   const body = event.body
 
@@ -37,8 +36,9 @@ async function batchHandler({ route, config }, event) {
     )
 
     const results = await Promise.all(
+      // eslint-disable-next-line no-loop-func
       toExecute.map(req => {
-        return executeRequest(config, route, event, req).catch(err => {
+        return executeRequest(config, route, event, context, req).catch(err => {
           return {
             statusCode: 500,
             body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
@@ -52,9 +52,9 @@ async function batchHandler({ route, config }, event) {
         complete.push(toExecute[index].id)
         return {
           id: toExecute[index].id,
-          status: result.statusCode,
-          body: result.body ? JSON.parse(result.body) : undefined,
-          headers: result.headers
+          status: result.response.statusCode,
+          body: result.response.body ? JSON.parse(result.response.body) : undefined,
+          headers: result.response.headers
         }
       })
     )
@@ -91,7 +91,7 @@ function composeQueryStringParametersFromUrl(url) {
   return queryStringParameters
 }
 
-async function executeRequest(config, route, event, request) {
+async function executeRequest(config, route, event, context, request) {
   const urlAndQueryString = request.url.split('?')
 
   const authorizationHeader = Object.keys(event.headers).find(
@@ -111,12 +111,10 @@ async function executeRequest(config, route, event, request) {
     multiValueQueryStringParameters: composeQueryStringParametersFromUrl(request.url)
   }
 
-  //Allow consumers to define a custom handler
-  if (config.handler) {
-    return await config.handler(childEvent, {})
-  }
-
-  return await route(childEvent, {})
+  context._batch = true
+  context.response = undefined
+  
+  return await route(childEvent, context)
 }
 
 function validateDependencyChain(requests) {
