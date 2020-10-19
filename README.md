@@ -60,6 +60,7 @@ function Router ({
     response
   }
   get|post|put|delete: async (pattern, handler) => {}
+  batch: (path, config) => {}
   unknown: (event, context, path, method) => {}
   beforeRoute: async (event, context, path, method)
 }
@@ -82,6 +83,42 @@ For example, the path `/v1/endpoint/1234` will match the route pattern `'/v1/end
 If the router option `extractPathParameters` is set, the `event.pathParameters` will receive the `id` value as `event.pathParameters.id: 1234`. Similarly, querystring parameters will be merged into `event.queryStringParameters`.
 
 Route handlers that return an object will get a default status code of 200, and the object will be passed to `JSON.stringify` before being returned. Handlers that throw an error will get a default status code of 500. If you throw an error object with a `statusCode` property it's value will replace the default 500 status code. To customize status code for successful responses see the **Custom Response** section below.
+
+
+## Batching
+
+By specifying a batch route, consumers can execute multiple requests routed to the respective handlers.
+
+`router.batch(routePattern: string, configOptions: object)`
+
+```js
+  config: {
+    maxBatchSize:20 \\ dictates maximum number of requests allowed in a single batch command
+  } 
+```
+
+Any request which matches the a batch route pattern will validate the input matches the schema:
+
+```js
+body: 
+  requests: {
+    type:"array", 
+    items: [{
+      id: {type:"string", required:true},
+      url: {type:"string", required:true},
+      method: {type:"string", enum:["GET","POST","PUT","DELETE","PATCH"], required:true},
+      body: {type:"object"},
+      headers: {type:"object"},
+      dependsOn: {type:"array"}
+    }]
+  }
+```
+All requests are executed asynchronously unless `dependsOn` is specified on a request, in-which-case the requests are executed in as few asynchronous groups as possible.
+
+For security, the `authorization` header may not be specified on a request element. If the batch route was called with an authorization header it will be supplied to every child request.
+
+`event` and `context` will be forwarded with changes to the `httpMethod`, `url`, `body`, `pathParameters.proxy`, `multiValueQueryStringParameters`. In addition the context will have a populated value `_batch` set to true as an indication to handlers that the request is being batched.
+
 
 
 ## The Unknown Handler
