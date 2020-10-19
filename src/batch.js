@@ -5,17 +5,21 @@ const { HttpError } = require('./httpError')
 const batchDefaultConfig = {
   maxBatchSize: 20
 }
-
-module.exports = {
-  batchHandler
+const batch = {
+  batchHandler,
+  executeRequest,
+  validateBatchRequest,
+  validateDependencyChain,
+  composeQueryStringParametersFromUrl
 }
+module.exports = batch
 
 async function batchHandler({ route, config }, event, context) {
   config = { ...batchDefaultConfig, ...config }
   const body = event.body
 
   // Validate
-  validateBatchRequest(body, config.maxBatchSize)
+  batch.validateBatchRequest(body, config.maxBatchSize)
 
   //Traverse dependency tree and execute requests
   let requests = [...body.requests]
@@ -38,10 +42,12 @@ async function batchHandler({ route, config }, event, context) {
     const results = await Promise.all(
       // eslint-disable-next-line no-loop-func
       toExecute.map(req => {
-        return executeRequest(config, route, event, context, req).catch(err => {
+        return batch.executeRequest(route, event, context, req).catch(err => {
           return {
-            statusCode: 500,
-            body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
+            response: {
+              statusCode: 500,
+              body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
+            }
           }
         })
       })
@@ -91,29 +97,35 @@ function composeQueryStringParametersFromUrl(url) {
   return queryStringParameters
 }
 
-async function executeRequest(config, route, event, context, request) {
+async function executeRequest(route, event, context, request) {
   const urlAndQueryString = request.url.split('?')
 
-  const authorizationHeader = Object.keys(event.headers).find(
-    header => header.toLowerCase() === 'authorization'
-  )
+  let headers
+  if (event.headers) {
+    const authorizationHeader = Object.keys(event.headers).find(
+      header => header.toLowerCase() === 'authorization'
+    )
+    headers = { ...request.headers, [authorizationHeader]: event.headers[authorizationHeader] }
+  } else {
+    headers = request.headers
+  }
 
   //Compose event to appear as native AWS event
   let childEvent = {
     ...event,
     httpMethod: request.method,
-    headers: { ...request.headers, [authorizationHeader]: event.headers[authorizationHeader] },
+    headers,
     body: request.body,
     path: urlAndQueryString[0],
     pathParameters: {
       proxy: urlAndQueryString[0].substring(1)
     },
-    multiValueQueryStringParameters: composeQueryStringParametersFromUrl(request.url)
+    multiValueQueryStringParameters: batch.composeQueryStringParametersFromUrl(request.url)
   }
 
   context._batch = true
   context.response = undefined
-  
+
   return await route(childEvent, context)
 }
 
@@ -216,5 +228,5 @@ function validateBatchRequest(body, maxBatchSize) {
     }
   }
 
-  validateDependencyChain(body.requests)
+  batch.validateDependencyChain(body.requests)
 }

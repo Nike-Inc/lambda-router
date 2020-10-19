@@ -70,10 +70,41 @@ test('PATCH adds a route to the routes list.', async t => {
 test('BATCH adds a route to the routes list.', async t => {
   t.plan(1)
   let router = Router()
-  router.batch('/$batch', () => {
-    t.pass('called batch')
+  router.get('/route', () => {
+    t.pass('called batched route')
   })
-  await router.route({}, {}, '/$batch', 'POST')
+  router.batch('/$batch')
+  const result = await router.route(
+    { body: { requests: [{ id: '1', url: '/route', method: 'GET' }] } },
+    {},
+    '/$batch',
+    'POST'
+  )
+})
+
+test('BATCH can execute multiple routes', async t => {
+  t.plan(2)
+  let router = Router()
+  router.get('/route', () => {
+    t.pass('called batched route')
+  })
+  router.post('/route2', () => {
+    t.pass('called batched route')
+  })
+  router.batch('/$batch')
+  const result = await router.route(
+    {
+      body: {
+        requests: [
+          { id: '1', url: '/route', method: 'GET' },
+          { id: '2', url: '/route2', method: 'POST' }
+        ]
+      }
+    },
+    {},
+    '/$batch',
+    'POST'
+  )
 })
 
 test('Unknown route returns error.', async t => {
