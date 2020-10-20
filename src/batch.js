@@ -167,8 +167,7 @@ function validateBatchRequest(body, maxBatchSize) {
   // validate json body has been parsed
   HttpError.assert(typeof body === 'object' && body !== null, 400, `invalid body; expected object`)
   // validate body.requests has array of requests
-  HttpError.assert(
-    body.requests && Array.isArray(body.requests),
+  HttpError.assert(Array.isArray(body.requests),
     400,
     `invalid body; expected requests to be an array`
   )
@@ -185,6 +184,7 @@ function validateBatchRequest(body, maxBatchSize) {
 
   // validate each body.requests[]
   const ids = body.requests.map(req => req.id)
+  const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
   for (let i = 0; i < body.requests.length; i++) {
     const request = body.requests[i]
     HttpError.assert(request.id, 400, `invalid body; requests[${i}].id required`)
@@ -195,7 +195,7 @@ function validateBatchRequest(body, maxBatchSize) {
     )
     HttpError.assert(request.method, 400, `invalid body; requests[${i}].method required`)
     HttpError.assert(
-      ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method),
+      methods.includes(request.method),
       400,
       `invalid body; requests[${i}].method must be one of ( GET | POST | PUT | PATCH | DELETE )`
     )
