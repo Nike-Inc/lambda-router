@@ -116,7 +116,7 @@ All requests are executed asynchronously unless `dependsOn` is specified on a re
 
 For security, the `authorization` header may not be specified on a request element. If the batch route was called with an authorization header it will be supplied to every child request.
 
-`event` and `context` will be forwarded with changes to the `httpMethod`, `url`, `body`, `pathParameters.proxy`, `multiValueQueryStringParameters`. In addition the context will have a populated value `_batch` set to true as an indication to handlers that the request is being batched.
+`event` and `context` will be forwarded with changes to the `httpMethod`, `url`, `body`, `pathParameters.proxy`, `multiValueQueryStringParameters`. In addition the event will have a populated value `batchRequestId` set to the id of the request.
 
 ## The Unknown Handler
 

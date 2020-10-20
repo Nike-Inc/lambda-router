@@ -442,6 +442,7 @@ test.serial('should call route with composed parameters', async t => {
     { e: true, headers: { AuThOrizaTION: 'auth' } },
     { context: true, response: 'asdf' },
     {
+      id: 'id',
       method: 'GET',
       headers: { AuThOrizaTION: 'wrong' },
       other: true,
@@ -452,6 +453,7 @@ test.serial('should call route with composed parameters', async t => {
   t.true(routeStub.calledOnce)
   t.deepEqual(routeStub.getCall(0).args, [
     {
+      batchRequestId: 'id',
       body: { b: true },
       e: true,
       headers: { AuThOrizaTION: 'auth' },
@@ -462,7 +464,7 @@ test.serial('should call route with composed parameters', async t => {
         proxy: 'url'
       }
     },
-    { context: true, _batch: true, response: undefined }
+    { context: true, response: undefined }
   ])
 
   sandbox.restore()
@@ -515,19 +517,49 @@ test.serial('uncaught errors should be handled and returned', async t => {
     id: '1',
     status: 500,
     headers: undefined,
-    body: { statusCode: 500, message: 'uncaught error' }
+    body: { statusCode: undefined, message: 'uncaught error' }
   })
   t.like(result.body[1], {
     id: '2',
     status: 500,
     headers: undefined,
-    body: { statusCode: 500, message: 'uncaught error' }
+    body: { statusCode: undefined, message: 'uncaught error' }
   })
 
   sandbox.restore()
 })
+test.serial('onErrorFormat should be called for uncaught errors', async t => {
+  const sandbox = sinon.createSandbox()
+  const validateBatchRequestStub = sandbox.stub(batch, 'validateBatchRequest')
+  validateBatchRequestStub.returns()
+  const executeRequestStub = sandbox.stub(batch, 'executeRequest')
+  executeRequestStub.rejects(new Error('uncaught error'))
 
-//batchHandler
+  const onErrorFormat = (statusCode, body) => {
+    return `${statusCode} => ${body.message}`
+  }
+
+  t.plan(2)
+  const result = await batchHandler(
+    { route: 'route', config: { maxBatchSize: 5 }, onErrorFormat },
+    { e: true, body: { requests: [{ id: '1' }, { id: '2' }] } },
+    { c: true }
+  )
+  t.like(result.body[0], {
+    id: '1',
+    status: 500,
+    headers: undefined,
+    body: '500 => uncaught error'
+  })
+  t.like(result.body[1], {
+    id: '2',
+    status: 500,
+    headers: undefined,
+    body: '500 => uncaught error'
+  })
+
+  sandbox.restore()
+})
 test.serial('should return results from async requests in order executed', async t => {
   const sandbox = sinon.createSandbox()
   const validateBatchRequestStub = sandbox.stub(batch, 'validateBatchRequest')

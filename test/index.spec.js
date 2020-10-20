@@ -133,10 +133,10 @@ test('BATCH can execute branches of dependencies asychronously with each other',
       body: {
         requests: [
           { id: 'A', url: '/A', method: 'GET' },
-          { id: 'B', url: '/B', method: 'POST', dependsOn:['A'] },
+          { id: 'B', url: '/B', method: 'POST', dependsOn: ['A'] },
           { id: 'C', url: '/C', method: 'POST' },
-          { id: 'D', url: '/D', method: 'POST', dependsOn:['C']  },
-          { id: 'E', url: '/E', method: 'POST', dependsOn:['C', 'D'] }
+          { id: 'D', url: '/D', method: 'POST', dependsOn: ['C'] },
+          { id: 'E', url: '/E', method: 'POST', dependsOn: ['C', 'D'] }
         ]
       }
     },
