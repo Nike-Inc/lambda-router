@@ -2,7 +2,7 @@
 
 const { HttpError } = require('./httpError')
 
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
+const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']
 const batchDefaultConfig = {
   maxBatchSize: 20
 }
@@ -196,7 +196,7 @@ function validateBatchRequest(body, maxBatchSize) {
     )
     HttpError.assert(request.method, 400, `invalid body; requests[${i}].method required`)
     HttpError.assert(
-      METHODS.includes(request.method),
+      methods.includes(request.method),
       400,
       `invalid body; requests[${i}].method must be one of ( GET | POST | PUT | PATCH | DELETE )`
     )
