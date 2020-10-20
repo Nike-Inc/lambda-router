@@ -84,7 +84,6 @@ If the router option `extractPathParameters` is set, the `event.pathParameters` 
 
 Route handlers that return an object will get a default status code of 200, and the object will be passed to `JSON.stringify` before being returned. Handlers that throw an error will get a default status code of 500. If you throw an error object with a `statusCode` property it's value will replace the default 500 status code. To customize status code for successful responses see the **Custom Response** section below.
 
-
 ## Batching
 
 By specifying a batch route, consumers can execute multiple requests routed to the respective handlers.
@@ -113,13 +112,11 @@ body:
     }]
   }
 ```
-All requests are executed asynchronously unless `dependsOn` is specified on a request, in-which-case the requests are executed in as few asynchronous groups as possible.
+All requests are executed asynchronously unless `dependsOn` is specified on a request, in-which-case the requests will wait for each dependency to have resolved before begining execution.
 
 For security, the `authorization` header may not be specified on a request element. If the batch route was called with an authorization header it will be supplied to every child request.
 
 `event` and `context` will be forwarded with changes to the `httpMethod`, `url`, `body`, `pathParameters.proxy`, `multiValueQueryStringParameters`. In addition the context will have a populated value `_batch` set to true as an indication to handlers that the request is being batched.
-
-
 
 ## The Unknown Handler
 
