@@ -23,14 +23,16 @@ async function batchHandler({ route, config }, event, context) {
   batch.validateBatchRequest(body, config.maxBatchSize)
 
   //Traverse dependency tree and execute requests
-  let requests = [...body.requests]
-  const complete = []
-  const responses = []
+  let remainingRequests = [...body.requests]
+  const idToPromise = {}
   do {
     let toExecute
-    ;[toExecute, requests] = requests.reduce(
+    ;[toExecute, remainingRequests] = remainingRequests.reduce(
       (arr, req) => {
-        if (!req.dependsOn || req.dependsOn.every(dependency => complete.includes(dependency))) {
+        if (
+          !req.dependsOn ||
+          req.dependsOn.every(dependency => Object.keys(idToPromise).includes(dependency))
+        ) {
           arr[0].push(req)
         } else {
           arr[1].push(req)
@@ -40,37 +42,46 @@ async function batchHandler({ route, config }, event, context) {
       [[], []]
     )
 
-    const results = await Promise.all(
-      // eslint-disable-next-line no-loop-func
-      toExecute.map(req => {
-        return batch.executeRequest(route, event, context, req).catch(err => {
-          return {
-            response: {
-              statusCode: 500,
-              body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
+    for (const req of toExecute) {
+      idToPromise[req.id] = new Promise(resolve => {
+        ;(async () => {
+          if (req.dependsOn) {
+            for (const id of req.dependsOn) {
+              await idToPromise[id]
             }
           }
-        })
-      })
-    )
 
-    responses.push(
-      ...results.map((result, index) => {
-        complete.push(toExecute[index].id)
-        return {
-          id: toExecute[index].id,
-          status: result.response.statusCode,
-          body: result.response.body ? JSON.parse(result.response.body) : undefined,
-          headers: result.response.headers
-        }
+          resolve(
+            await batch.executeRequest(route, event, context, req).catch(err => {
+              return {
+                response: {
+                  statusCode: 500,
+                  body: JSON.stringify({ statusCode: 500, message: err.message, stack: err.stack })
+                }
+              }
+            })
+          )
+        })()
       })
-    )
+    }
 
     //Saftey Check; Shouldn't happen, but if it were to we'd be stuck in an infinite loop
     if (toExecute.length === 0) {
       throw new HttpError(400, `Invalid dependency chain`)
     }
-  } while (requests.length > 0)
+  } while (remainingRequests.length > 0)
+
+  const responses = []
+  const ids = Object.keys(idToPromise)
+  for (let i = 0; i < ids.length; i++) {
+    const result = await idToPromise[ids[i]]
+    responses.push({
+      id: ids[i],
+      status: result.response.statusCode,
+      body: result.response.body ? JSON.parse(result.response.body) : undefined,
+      headers: result.response.headers
+    })
+  }
 
   return {
     statusCode: 200,
