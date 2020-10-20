@@ -107,6 +107,45 @@ test('BATCH can execute multiple routes', async t => {
   )
 })
 
+test('BATCH can execute branches of dependencies asychronously with each other', async t => {
+  t.plan(5)
+  let router = Router()
+  let callNumber = 0
+  router.get('/A', async () => {
+    await new Promise(resolve => setTimeout(resolve, 5))
+    t.is(++callNumber, 4)
+  })
+  router.post('/B', () => {
+    t.is(++callNumber, 5)
+  })
+  router.post('/C', () => {
+    t.is(++callNumber, 1)
+  })
+  router.post('/D', () => {
+    t.is(++callNumber, 2)
+  })
+  router.post('/E', () => {
+    t.is(++callNumber, 3)
+  })
+  router.batch('/$batch')
+  const result = await router.route(
+    {
+      body: {
+        requests: [
+          { id: 'A', url: '/A', method: 'GET' },
+          { id: 'B', url: '/B', method: 'POST', dependsOn:['A'] },
+          { id: 'C', url: '/C', method: 'POST' },
+          { id: 'D', url: '/D', method: 'POST', dependsOn:['C']  },
+          { id: 'E', url: '/E', method: 'POST', dependsOn:['C', 'D'] }
+        ]
+      }
+    },
+    {},
+    '/$batch',
+    'POST'
+  )
+})
+
 test('Unknown route returns error.', async t => {
   t.plan(4)
   let router = Router()
