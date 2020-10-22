@@ -15,7 +15,7 @@ const batch = {
 }
 module.exports = batch
 
-async function batchHandler({ route, config, onErrorFormat }, event, context) {
+async function batchHandler({ route, config }, event, context) {
   config = { ...batchDefaultConfig, ...config }
   const body = event.body
 
@@ -51,26 +51,7 @@ async function batchHandler({ route, config, onErrorFormat }, event, context) {
             }
           }
 
-          resolve(
-            await batch.executeRequest(route, event, context, req).catch(error => {
-              const statusCode = error.statusCode || 500
-              let body = {
-                ...error,
-                // The spread doesn't get the non-enumerable message
-                message: error.message,
-                stack: config.includeErrorStack && error.stack
-              }
-              if (onErrorFormat && typeof onErrorFormat === 'function') {
-                body = onErrorFormat(statusCode, body)
-              }
-              return {
-                response: {
-                  statusCode,
-                  body: JSON.stringify(body)
-                }
-              }
-            })
-          )
+          resolve(await batch.executeRequest(route, event, context, req))
         })()
       })
     }

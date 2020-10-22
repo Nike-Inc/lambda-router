@@ -160,7 +160,7 @@ function Router({
     routes.push({
       method: 'POST',
       path,
-      handler: batchHandler.bind(null, { route, config, onErrorFormat })
+      handler: batchHandler.bind(null, { route, config })
     })
   }
 
