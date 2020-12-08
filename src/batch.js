@@ -74,7 +74,7 @@ async function batchHandler({ route, config }, event, context) {
     })
   }
 
-  return context.response(200, { responses }, {})
+  return context.response(200, { responses })
 }
 
 function composeQueryStringParametersFromUrl(url) {
