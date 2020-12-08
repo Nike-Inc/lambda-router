@@ -1,6 +1,6 @@
 {
   "name": "lambda-router",
-  "version": "2.10.1",
+  "version": "2.11.0-1",
   "description": "A router to simplify AWS Lambda Functions.",
   "main": "src/index.js",
   "files": [
@@ -21,7 +21,8 @@
     "report:open": "npm run report && open coverage/index.html",
     "test:ci": "npm run check && ava --tap | tap-xunit > ~/reports/ava.xml && npm run test:coverage && npm run report:ci",
     "style": "prettier --config package.json  --write \"{src,test}/**/*.js\"",
-    "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/"
+    "jsdoc:generate": "jsdoc ./src/index.js -d ./docs/",
+    "release": "np"
   },
   "repository": {
     "type": "git",
@@ -45,6 +46,7 @@
     "eslint": "^5.16.0",
     "expect": "1.20.2",
     "jsdoc": "^3.4.3",
+    "np": "^7.0.0",
     "nyc": "latest",
     "prettier": "^1.18.2",
     "sinon": "^7.3.2"
