@@ -512,15 +512,19 @@ test.serial('should return results from async requests in order executed', async
   const result = await batchHandler(
     { route: 'route', config: { maxBatchSize: 5 } },
     { e: true, body: { requests: [{ id: '1' }, { id: '2' }] } },
-    { c: true }
+    {
+      response: (statusCode, body, headers) => {
+        return { statusCode, body, headers }
+      }
+    }
   )
-  t.like(result.body[0], {
+  t.like(result.body.responses[0], {
     id: '1',
     status: 204,
     headers: undefined,
     body: undefined
   })
-  t.like(result.body[1], {
+  t.like(result.body.responses[1], {
     id: '2',
     status: 200,
     headers: undefined,
@@ -555,33 +559,37 @@ test.serial('should return results from sync requests according to dependency ch
         ]
       }
     },
-    { c: true }
+    {
+      response: (statusCode, body, headers) => {
+        return { statusCode, body, headers }
+      }
+    }
   )
-  t.like(result.body[0], {
+  t.like(result.body.responses[0], {
     id: 'A',
     status: 200,
     headers: undefined,
     body: { ok: 1 }
   })
-  t.like(result.body[1], {
+  t.like(result.body.responses[1], {
     id: 'C',
     status: 200,
     headers: undefined,
     body: { ok: 2 }
   })
-  t.like(result.body[2], {
+  t.like(result.body.responses[2], {
     id: 'B',
     status: 200,
     headers: undefined,
     body: { ok: 3 }
   })
-  t.like(result.body[3], {
+  t.like(result.body.responses[3], {
     id: 'E',
     status: 200,
     headers: undefined,
     body: { ok: 4 }
   })
-  t.like(result.body[4], {
+  t.like(result.body.responses[4], {
     id: 'D',
     status: 200,
     headers: undefined,
