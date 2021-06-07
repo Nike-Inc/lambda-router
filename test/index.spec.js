@@ -622,3 +622,24 @@ test('route normalizes headers with an option', async t => {
     'POST'
   )
 })
+
+test('pass original error props on formatError', async t => {
+  t.plan(3)
+  const router = Router()
+  const errorName = 'ValidationError'
+  const errorMessage = 'Ops, validation error'
+
+  router.post('/route', (event, { name }) => {
+    const error = new Error(errorMessage)
+    error.name = errorName
+    throw error
+  })
+
+  router.formatError((statusCode, error) => {
+    t.is(statusCode, 500)
+    t.is(error.message, errorMessage)
+    t.is(error.name, errorName)
+  })
+
+  await router.route({}, {}, '/route', 'POST')
+})
