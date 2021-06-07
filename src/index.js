@@ -145,6 +145,7 @@ function Router({
         ...error,
         // The spread doesn't get the non-enumerable message
         message: error.message,
+        name: error.name,
         stack: includeErrorStack && error.stack
       }
       if (onErrorFormat && typeof onErrorFormat === 'function') {
