@@ -1,6 +1,6 @@
 {
   "name": "lambda-router",
-  "version": "2.11.0",
+  "version": "2.12.0",
   "description": "A router to simplify AWS Lambda Functions.",
   "main": "src/index.js",
   "files": [
