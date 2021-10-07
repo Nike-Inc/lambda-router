@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 
+## [2.12.0] - 2021-08-07
+### Added
+- `routes` to `unknown` as 5th parameter
+- `statusCode: 405` to `defaultUnknownRoute` when other methods for the same path exist
+
 ## [2.11.0] - 2021-06-06
 ### Added
 - `error.name` pass-through to `formatError`

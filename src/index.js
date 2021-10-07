@@ -130,7 +130,7 @@ function Router({
 
       let result = await (route
         ? route.handler(event, context)
-        : unknownRouteHandler(event, context, requestPath, httpMethod))
+        : unknownRouteHandler(event, context, requestPath, httpMethod, routes))
       if (result && result._isCustomResponse === CUSTOM_RESPONSE) {
         statusCode = result.statusCode
         body = result.body
@@ -147,6 +147,9 @@ function Router({
         message: error.message,
         name: error.name,
         stack: includeErrorStack && error.stack
+      }
+      if (error.headers) {
+        headers = { ...headers, ...error.headers }
       }
       if (onErrorFormat && typeof onErrorFormat === 'function') {
         body = onErrorFormat(statusCode, body)
@@ -241,9 +244,23 @@ function doPathPartsMatch(eventPath, route) {
   return tokens
 }
 
-function defaultUnknownRoute(event, context, path) {
-  let error = new Error(`No route specified for path: ${path}`)
+function defaultUnknownRoute(event, context, path, httpMethod, routes) {
+  const methodMatches = routes
+    .filter(r => {
+      return path === r.path
+    })
+    .map(r => r.method)
+
+  const error = new Error(`Endpoint not supported: ${httpMethod}${path}`)
   error.statusCode = 404
+
+  if (methodMatches.length) {
+    error.statusCode = 405
+    error.headers = {
+      Allow: methodMatches.join(',')
+    }
+  }
+
   throw error
 }
 

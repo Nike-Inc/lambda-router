@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@kyeotic/eslint-config": "^0.9.0",
-    "ava": "^3.12.1",
+    "ava": "^3.15.0",
     "aws-sdk": "^2.4.8",
     "chokidar-cli": "^2.1.0",
     "eslint": "^5.16.0",

@@ -22,7 +22,7 @@ router.post('/v1/endpoint', service.create)
 router.get('/v1/endpoint/{id}', service.get)
 router.put('/v1/endpoint/{id}', service.put)
 router.delete('/v1/endpoint/{id}', service.delete)
-router.unknown((event, { response }, path, method) => {
+router.unknown((event, { response }, path, method, routes) => {
   return response(404, {
     message: `You dun screwed up, now. ${path} doesn't exist!`
   })
@@ -60,7 +60,7 @@ function Router ({
     response
   }
   get|post|put|delete: async (pattern, handler) => {}
-  unknown: (event, context, path, method) => {}
+  unknown: (event, context, path, method, routes) => {}
   beforeRoute: async (event, context, path, method)
 }
 ```
@@ -87,6 +87,8 @@ Route handlers that return an object will get a default status code of 200, and 
 ## The Unknown Handler
 
 When no route is matched the unknown handler is invoked. The default unknown handler will return a canned response containing the unmatched path, with a 404. You can replace the unknown handler by provider your own to `router.unknown`. This handler will function as a normal handler, returning a 200 unless it throws an error. Since errors default to status code 500, you should probably manually set the status code to 404.
+
+There is a special case on the default unknown handler when the request has a match on the path but not on the method. In this case a 405 with a correct `Allow` header will be returned.
 
 ## Middleware
 

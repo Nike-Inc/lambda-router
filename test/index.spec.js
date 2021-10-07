@@ -74,7 +74,24 @@ test('Unknown route returns error.', async t => {
   t.is(result.endpoint, undefined, 'no endpoint')
   t.is(result.uri, '/route', 'has uri')
   t.is(result.response.statusCode, 404, 'has uri')
-  t.truthy(result.response.body.includes('No route specified for path: /route'), 'has error')
+  t.truthy(result.response.body.includes('Endpoint not supported: DELETE/route'), 'has error')
+})
+
+test('Unknown route returns error 405 when methods are available', async t => {
+  t.plan(5)
+  let router = Router()
+  router.put('/route', () => {
+    t.fail('called put')
+  })
+  router.post('/route', () => {
+    t.fail('called post')
+  })
+  let result = await router.route({ method: 'DELETE', path: '/route' }, {})
+  t.is(result.endpoint, undefined, 'no endpoint')
+  t.is(result.uri, '/route', 'has uri')
+  t.is(result.response.statusCode, 405, 'has status')
+  t.is(result.response.headers.Allow, 'PUT,POST')
+  t.truthy(result.response.body.includes('Endpoint not supported: DELETE/route'), 'has error')
 })
 
 test('unknown set the unknown route.', async t => {
@@ -255,7 +272,7 @@ test('if no route is defined the default router returns an error', async t => {
   let router = Router()
   let result = await router.route({ resourcePath: '/none', method: 'GET' }, {})
   t.truthy(
-    JSON.parse(result.response.body).message.includes('No route specified'),
+    JSON.parse(result.response.body).message.includes('Endpoint not supported'),
     'The proper error bubbled up.'
   )
 })
