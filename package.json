@@ -11,7 +11,7 @@
   },
   "scripts": {
     "test": "jest",
-    "test:ci": "run-s check:ci jest",
+    "test:ci": "run-s check:ci test",
     "test:watch": "jest --watch",
     "build": "run-s build:clean build:tsc",
     "build:clean": "del dist/ ",

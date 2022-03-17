@@ -16,6 +16,7 @@ export interface ILogger {
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const noop = () => {}
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function wrapper(baseLogger: any): ILogger {
   const logger = baseLogger || {}
   if (logger.minimumLogLevel !== undefined && !logLevels.includes(logger.minimumLogLevel)) {

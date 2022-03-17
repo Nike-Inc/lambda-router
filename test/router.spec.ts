@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable jest/no-conditional-expect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import qs from 'querystring'
 import { Router } from '../src/router'
 
@@ -462,7 +466,7 @@ describe('Router', () => {
     expect.assertions(6)
     const router = Router()
     router.post('/route', jest.fn())
-    let traceId = '1234'
+    const traceId = '1234'
     let result = await router.route(
       { headers: { 'X-Trace-Id': traceId } } as any,
       {},
@@ -506,7 +510,7 @@ describe('Router', () => {
     expect.assertions(1)
     const router = Router()
     router.post('/route', jest.fn())
-    let traceId = '1234'
+    const traceId = '1234'
     const result = await router.route(
       { headers: {} } as any,
       { awsRequestId: traceId },
@@ -522,7 +526,7 @@ describe('Router', () => {
     router.post('/route', (async (event, { name }) => {
       expect(name).toBe('tim')
     }) as any)
-    let context = {}
+    const context = {}
     Object.defineProperty(context, 'name', {
       enumerable: false,
       configurable: false,
@@ -561,14 +565,14 @@ describe('Router', () => {
   test('throwing an error in middleware creates error response', async () => {
     expect.assertions(2)
 
-    let beforeRouteStub = () => {
+    const beforeRouteStub = () => {
       const error: any = new Error()
       error.statusCode = 400
       throw error
     }
-    let path = '/route'
+    const path = '/route'
     const router = Router()
-    let routeHandler = jest.fn()
+    const routeHandler = jest.fn()
 
     router.beforeRoute(beforeRouteStub)
     router.get(path, routeHandler)
@@ -583,9 +587,9 @@ describe('Router', () => {
   test('multiple middleware functions are accepted', async () => {
     expect.assertions(2)
 
-    let middlewareA = jest.fn()
-    let middlewareB = jest.fn()
-    let path = '/route'
+    const middlewareA = jest.fn()
+    const middlewareB = jest.fn()
+    const path = '/route'
     const router = Router()
 
     router.beforeRoute(middlewareA)

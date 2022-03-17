@@ -159,7 +159,7 @@ export function Router<Event extends ProxyEvent, Context>({
   }
 
   let unknownRouteHandler = defaultUnknownRoute
-  let defaultHeaders: Headers = {
+  const defaultHeaders: Headers = {
     'content-type': 'application/json',
   }
   if (cors) {
@@ -181,11 +181,11 @@ export function Router<Event extends ProxyEvent, Context>({
       rawHeaders: lambdaEvent.headers,
     }
     let statusCode, body
-    let requestHeaders = normalizeRequestHeaders(event.headers)
+    const requestHeaders = normalizeRequestHeaders(event.headers)
     let headers = { ...defaultHeaders }
     // Safety Checks
     if ((lambdaContext as any).response) {
-      let message =
+      const message =
         'context.response has already been assigned. Lambda-router reserves this property for custom responses.'
       logger.error(message)
       return Promise.reject(new Error(message))
@@ -263,7 +263,7 @@ export function Router<Event extends ProxyEvent, Context>({
     // Route
     if (includeTraceId) context.traceId = headers['X-Correlation-Id'] = getTraceId(event, context)
     try {
-      for (let fn of middleware) {
+      for (const fn of middleware) {
         await fn(event, context, requestPath, httpMethod)
       }
 
@@ -339,7 +339,7 @@ function customResponse<Context>(
     isBase64Encoded?: boolean
   }
 ): CustomResponse {
-  let response = {
+  const response = {
     [CUSTOM_RESPONSE]: true,
     statusCode,
     body,
@@ -394,7 +394,7 @@ function matchPathParts(eventPath: string, path: string): Record<string, string>
     const routePart = routePathParts[i]
 
     // If the part is a curly braces value
-    let pathPartMatch = /\{(\w+)}/g.exec(routePart)
+    const pathPartMatch = /\{(\w+)}/g.exec(routePart)
     if (pathPartMatch) {
       tokens[pathPartMatch[1]] = pathPart
       continue
@@ -495,7 +495,7 @@ function hasHeaderValue(header: string | undefined, value?: string): boolean {
   header = header.toLowerCase()
   value = value.toLowerCase()
   if (header === value) return true
-  let headerParts = header.split(';')
+  const headerParts = header.split(';')
   return headerParts.includes(value)
 }
 
