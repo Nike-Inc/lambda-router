@@ -5,6 +5,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
+      - name: Test
+        run: |
+          yarn install --immutable
       - uses: andresz1/size-limit-action@b573abe8665ac5727d0834a4c72442b0eed7aea4
         with:
+          skip_step: install
           github_token: ${{ secrets.GITHUB_TOKEN }}
