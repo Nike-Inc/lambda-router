@@ -28,7 +28,7 @@
     "analyze": "size-limit --why"
   },
   "dependencies": {
-    "uuid": "^3.3.2"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@size-limit/preset-small-lib": "^7.0.8",
