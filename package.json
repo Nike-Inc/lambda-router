@@ -2,7 +2,8 @@
   "name": "lambda-router",
   "version": "3.0.0-0",
   "description": "A router to simplify AWS Lambda Functions.",
-  "main": "lib/router.js",
+  "main": "lib/main.js",
+  "typings": "lib/types/main.d.ts",
   "files": [
     "lib"
   ],
