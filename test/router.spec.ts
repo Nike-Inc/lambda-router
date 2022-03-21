@@ -96,6 +96,15 @@ describe('Router', () => {
     expect(handler).toHaveBeenCalled()
   })
 
+  test('trailing slash does not remove "/" route', async () => {
+    expect.assertions(1)
+    const router = Router()
+    const handler = jest.fn()
+    router.get('/', handler)
+    await router.route({} as any, {}, '/', 'GET')
+    expect(handler).toHaveBeenCalled()
+  })
+
   test('trialing slash causes unknown route', async () => {
     const router = Router({ trimTrailingSlash: false })
     const handler = jest.fn()

@@ -8,8 +8,12 @@ const METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const
 
 type Method = typeof METHODS[number]
 
-interface Headers {
+interface RequestHeaders {
   [key: string]: string | undefined
+}
+
+interface ResponseHeaders {
+  [key: string]: string | boolean | number
 }
 
 export interface BodyResponse {
@@ -17,9 +21,9 @@ export interface BodyResponse {
 }
 
 export interface Response {
-  statusCode?: number
-  headers?: Headers
-  body?: string
+  statusCode: number
+  headers?: ResponseHeaders
+  body: string
   isBase64Encoded?: boolean
 }
 
@@ -49,7 +53,7 @@ export interface CustomResponseFn {
   (options: {
     statusCode?: number
     body?: unknown
-    headers?: Headers
+    headers?: ResponseHeaders
     isBase64Encoded?: boolean
   }): CustomResponse
   setHeader: (header: string, value: string) => void
@@ -57,18 +61,20 @@ export interface CustomResponseFn {
 
 export interface HttpError extends Error {
   statusCode: number
-  headers: Headers
+  headers: ResponseHeaders
 }
 
 type ProxyEvent = APIGatewayProxyEvent | APIGatewayProxyEventV2
+
 export type AddRoute<Event extends ProxyEvent, Context> = (
   path: string,
   handler: RouteHandler<RouterEvent<Event>, RouterContext<Context>>
 ) => void
+
 export type RouterEvent<Event extends ProxyEvent> = Omit<Event, 'body'> & {
   body?: string | null | Record<string, unknown>
   rawBody?: string | null
-  rawHeaders: Headers
+  rawHeaders: RequestHeaders
 }
 export type RouterContext<Context> = Context & {
   includeTraceId?: boolean
@@ -159,7 +165,7 @@ export function Router<Event extends ProxyEvent, Context>({
   }
 
   let unknownRouteHandler = defaultUnknownRoute
-  const defaultHeaders: Headers = {
+  const defaultHeaders: ResponseHeaders = {
     'content-type': 'application/json',
   }
   if (cors) {
@@ -222,7 +228,7 @@ export function Router<Event extends ProxyEvent, Context>({
     }
 
     if (trimTrailingSlash && requestPath) {
-      requestPath = requestPath.replace(/\/$/, '')
+      requestPath = requestPath.replace(/(?<=.)\/$/, '')
     }
 
     if (normalizeHeaders) {
@@ -251,6 +257,7 @@ export function Router<Event extends ProxyEvent, Context>({
       }
     } catch (error: any) {
       logger.error('route error', error?.toString(), error?.stack)
+
       return createResponse(
         400,
         { message: 'Malformed request' },
@@ -335,7 +342,7 @@ function customResponse<Context>(
   }: {
     statusCode?: number
     body?: BodyResponse | string
-    headers?: Headers
+    headers?: ResponseHeaders
     isBase64Encoded?: boolean
   }
 ): CustomResponse {
@@ -438,7 +445,7 @@ function defaultUnknownRoute(
 function createResponse(
   statusCode: number,
   body: BodyResponse | string,
-  headers: Headers,
+  headers: ResponseHeaders,
   endpoint: string | undefined,
   uri: string
 ): RouterResponse {
@@ -453,7 +460,7 @@ function createResponse(
 export function createProxyResponse(
   statusCode: number,
   body: BodyResponse | string,
-  headers: Headers = {}
+  headers: ResponseHeaders = {}
 ): Response {
   if (headers['content-type'] === undefined) headers['content-type'] = 'application/json'
   // output follows the format described here
@@ -499,9 +506,12 @@ function hasHeaderValue(header: string | undefined, value?: string): boolean {
   return headerParts.includes(value)
 }
 
-function normalizeRequestHeaders(reqHeaders: Headers = {}): Headers {
+function normalizeRequestHeaders(reqHeaders: RequestHeaders = {}): RequestHeaders {
   return Object.keys(reqHeaders).reduce((headers, name) => {
-    headers[name.toLowerCase()] = reqHeaders[name]
+    const reqHeader = reqHeaders[name]
+    if (reqHeader) {
+      headers[name.toLowerCase()] = reqHeader
+    }
     return headers
-  }, {} as Headers)
+  }, {} as RequestHeaders)
 }
