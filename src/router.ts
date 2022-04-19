@@ -8,17 +8,11 @@ const METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const
 
 type Method = typeof METHODS[number]
 
-interface RequestHeaders {
-  [key: string]: string | undefined
-}
+type RequestHeaders = Record<string, string | undefined>
 
-interface ResponseHeaders {
-  [key: string]: string | boolean | number
-}
+type ResponseHeaders = Record<string, string | boolean | number>
 
-export interface BodyResponse {
-  [key: string]: unknown
-}
+export type BodyResponse = Record<string, unknown>
 
 export interface Response {
   statusCode: number
