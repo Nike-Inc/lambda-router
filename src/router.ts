@@ -12,7 +12,7 @@ type RequestHeaders = Record<string, string | undefined>
 
 type ResponseHeaders = Record<string, string | boolean | number>
 
-export type BodyResponse = Record<string, unknown>
+export type BodyResponse = object | string
 
 export interface Response {
   statusCode: number
@@ -23,7 +23,10 @@ export interface Response {
 
 export interface CustomResponse extends Omit<Response, 'body'> {
   [CUSTOM_RESPONSE]: boolean
-  body?: string | BodyResponse
+  statusCode: number
+  headers?: ResponseHeaders
+  isBase64Encoded?: boolean
+  body?: unknown
 }
 
 export interface RouteHandler<Event, Context> {
@@ -268,13 +271,12 @@ export function Router<Event extends ProxyEvent, Context>({
         await fn(event, context, requestPath, httpMethod)
       }
 
-      let result = await (route
+      const result = await (route
         ? route.handler(event, context)
         : unknownRouteHandler(event, context, requestPath, httpMethod, routes))
       if (result && (result as CustomResponse)[CUSTOM_RESPONSE] === true) {
-        result = result as CustomResponse
-        statusCode = result.statusCode
-        body = result.body
+        statusCode = (result as CustomResponse).statusCode
+        body = (result as CustomResponse).body
         headers = { ...defaultHeaders, ...(result as CustomResponse).headers }
       } else {
         statusCode = 200
