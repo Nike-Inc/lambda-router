@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [3.0.0] - Unreleased
 ### Added
 - Support for `APIGatewayProxyEventV2`
+- Parse as json when `content-type: application/merge-patch+json`
 ### Changed
 - Converted project to TypeScript
 - **Breaking Change**: `trimTrailingSlash` defaults to `true`

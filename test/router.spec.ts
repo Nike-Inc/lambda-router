@@ -337,6 +337,23 @@ describe('Router', () => {
     )
   })
 
+  test('route parses json body with merge-patch', async () => {
+    expect.assertions(1)
+    const router = Router()
+    router.post('/route', (async ({ body }: any) => {
+      expect(body.name).toBe('tim')
+    }) as any)
+    await router.route(
+      {
+        body: JSON.stringify({ name: 'tim' }),
+        headers: { 'Content-Type': 'application/merge-patch+json' },
+      } as any,
+      {},
+      '/route',
+      'POST'
+    )
+  })
+
   test('route parses json body with assumeJson', async () => {
     expect.assertions(1)
     const router = Router({ assumeJson: true })
