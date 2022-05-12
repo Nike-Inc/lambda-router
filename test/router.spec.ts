@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import qs from 'querystring'
 import { Router } from '../src/router'
+import './util'
 
 describe('Router', () => {
   test('All methods adds a route to the routes list.', async () => {
@@ -276,6 +277,7 @@ describe('Router', () => {
   })
 
   test('route throws if context.response has already been set', async () => {
+    expect.assertions(1)
     const router = Router()
     router.post('/route', (() => {}) as any)
     await router.route({} as any, { response: true }, '/route', 'POST').catch((err) => {
@@ -341,7 +343,8 @@ describe('Router', () => {
     expect.assertions(1)
     const router = Router()
     router.post('/route', (async ({ body }: any) => {
-      expect(body.name).toBe('tim')
+      console.log('body', typeof body, body.name)
+      expect(body.name).toEqual('tim')
     }) as any)
     await router.route(
       {

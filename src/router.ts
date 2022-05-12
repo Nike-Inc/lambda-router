@@ -193,10 +193,8 @@ export function Router<Event extends ProxyEvent, Context>({
       logger.error(message)
       return Promise.reject(new Error(message))
     }
-    const context = {
-      ...lambdaContext,
-      includeTraceId,
-    } as RouterContext<Context>
+    const context = lambdaContext as RouterContext<Context>
+    context.includeTraceId = includeErrorStack
     // Custom Response
     const response: any = customResponse.bind(null, context)
     response.setHeader = (header: string, value: string) => {
@@ -236,7 +234,10 @@ export function Router<Event extends ProxyEvent, Context>({
     const hasBody = event.body && typeof event.body === 'string'
     const contentType = requestHeaders && requestHeaders['content-type']
     const jsonBody =
-      hasBody && (hasHeaderValue(contentType, 'application/json') || (!contentType && assumeJson))
+      hasBody &&
+      (hasHeaderValue(contentType, 'application/json') ||
+        hasHeaderValue(contentType, 'application/merge-patch+json') ||
+        (!contentType && assumeJson))
     const urlEncodedBody =
       hasBody && hasHeaderValue(contentType, 'application/x-www-form-urlencoded')
 

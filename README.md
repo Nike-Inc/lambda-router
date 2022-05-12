@@ -115,7 +115,11 @@ router.post('/v1/endpoint', service.create)
 router.get('/v1/endpoint/{id}', service.get)
 ```
 
-# Custom Response
+# Context
+
+The `router.route` function takes an `event` and a `context`. The `context` is useful to provide application data to the routes. It is important to know that this value must be an object, as the `route` function **mutates it** in order to provide the functionality below.
+
+## Custom Response
 
 The `context` object, the second parameter to route handlers, has a `response` property function. It can be used to provide custom status codes, custom headers, and control body serialization.
 
@@ -132,7 +136,7 @@ async function download({ headers }, { path, response })
   return response(201, file, { 'Content-Type': 'application/octet-stream' })
 ```
 
-# Custom Headers
+## Custom Headers
 
 Fully-custom responses are sometimes undesirable, as they avoid some of the automatic behavior of normal respones (such as error formatting). If your only goal is to set a custom response header you can use `response.setHeader`
 

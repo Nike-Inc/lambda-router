@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - **Breaking Change**: `trimTrailingSlash` defaults to `true`
 - **Breaking Change**: `normalizeHeaders` defaults to `true`
 - **Breaking Change**: `context.response` now takes an _options_ object as its only parameter
+- Downgraded Jest to v26 in order to handle [this issue](https://github.com/facebook/jest/issues/12838)
 ### Removed
 - **Breaking Change**: Support for Node < 14
 
