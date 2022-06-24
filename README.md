@@ -45,6 +45,8 @@ async function handler (lambdaEvent, context) {
 ```javascript
 function Router ({
   logger, // logger-wrapper
+  assumeJson = false, // assume content-type:application/json if not content-type header is provided
+  trimTrailingSlash = true, // match on paths that end with slash, e.g. "/path" matches "path/"
   extractPathParameters = true, // merge proxy path parameters into event.pathParameters
   includeTraceId = true, // include TraceId header
   inluceErrorStack = false, // include stack traces with error responses
