@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-empty-function */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable jest/no-conditional-expect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import qs from 'querystring'
 import { Router } from '../src/router'
 import './util'
 
@@ -15,7 +15,7 @@ describe('Router', () => {
     for (const method of methods) {
       const handler = jest.fn()
       router[method.toLowerCase()]('/route', handler)
-      await router.route({} as any as any, {}, '/route', method)
+      await router.route({} as any, {}, '/route', method)
       expect(handler).toHaveBeenCalled()
     }
   })
@@ -56,7 +56,7 @@ describe('Router', () => {
     expect(result.endpoint).toBe(undefined)
     expect(result.uri).toBe('/route')
     expect(result.response.statusCode).toBe(405)
-    expect(result.response.headers.Allow.split(',')).toEqual(
+    expect(result.response.headers!.Allow.toString().split(',')).toEqual(
       expect.arrayContaining(['PUT', 'POST'])
     )
     expect(result.response.body).toContain('Endpoint not supported: DELETE/route')
@@ -73,7 +73,7 @@ describe('Router', () => {
 
   test('unknown handler can use custom responses.', async () => {
     const router = Router()
-    router.unknown(async (event, { response }, path, method) => {
+    router.unknown(async (_event, { response }, path) => {
       return response({
         statusCode: 404,
         body: {
@@ -302,7 +302,7 @@ describe('Router', () => {
     const result = await router.route({} as any, {}, '/route', 'POST')
     expect(result.response.statusCode).toBe(200)
     expect(result.response.body).toBe(JSON.stringify({ message: 'success' }))
-    expect(result.response.headers.Location).toBe('something')
+    expect(result.response.headers!.Location).toBe('something')
   })
 
   test('route errors still format when using custom response headers', async () => {
@@ -319,7 +319,7 @@ describe('Router', () => {
     })
 
     const result = await router.route({ rawPath: '/get', method: 'GET' } as any, {})
-    expect(result.response.headers.Location).toBe('something')
+    expect(result.response.headers!.Location).toBe('something')
   })
 
   test('route parses json body with default option', async () => {
@@ -343,7 +343,7 @@ describe('Router', () => {
     expect.assertions(1)
     const router = Router()
     router.post('/route', (async ({ body }: any) => {
-      console.log('body', typeof body, body.name)
+      // console.log('body', typeof body, body.name)
       expect(body.name).toEqual('tim')
     }) as any)
     await router.route(
@@ -381,7 +381,7 @@ describe('Router', () => {
     }) as any)
     await router.route(
       {
-        body: qs.stringify({ name: 'tim' }),
+        body: new URLSearchParams({ name: 'tim' }).toString(),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       } as any,
       {},
@@ -398,7 +398,7 @@ describe('Router', () => {
     }) as any)
     await router.route(
       {
-        body: qs.stringify({ name: 'tim' }),
+        body: new URLSearchParams({ name: 'tim' }).toString(),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         },
@@ -480,7 +480,7 @@ describe('Router', () => {
     const router = Router()
     router.post('/route', jest.fn())
     const result = await router.route({} as any, {}, '/route', 'POST')
-    expect(result.response.headers['X-Correlation-Id']).toBeTruthy()
+    expect(result.response.headers!['X-Correlation-Id']).toBeTruthy()
   })
 
   test('traceId is skipped if disabled', async () => {
@@ -488,7 +488,7 @@ describe('Router', () => {
     const router = Router({ includeTraceId: false })
     router.post('/route', jest.fn())
     const result = await router.route({} as any, {}, '/route', 'POST')
-    expect(result.response.headers['X-Correlation-Id']).toBeFalsy()
+    expect(result.response.headers!['X-Correlation-Id']).toBeFalsy()
   })
 
   test('traceId is reused from event', async () => {
@@ -502,13 +502,13 @@ describe('Router', () => {
       '/route',
       'POST'
     )
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
 
     result = await router.route({ headers: { 'X-TRACE-ID': traceId } } as any, {}, '/route', 'POST')
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
 
     result = await router.route({ headers: { 'x-trace-id': traceId } } as any, {}, '/route', 'POST')
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
 
     result = await router.route(
       { headers: { 'X-Correlation-Id': traceId } } as any,
@@ -516,7 +516,7 @@ describe('Router', () => {
       '/route',
       'POST'
     )
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
 
     result = await router.route(
       { headers: { 'X-CORRELATION-ID': traceId } } as any,
@@ -524,7 +524,7 @@ describe('Router', () => {
       '/route',
       'POST'
     )
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
 
     result = await router.route(
       { headers: { 'x-correlation-id': traceId } } as any,
@@ -532,7 +532,7 @@ describe('Router', () => {
       '/route',
       'POST'
     )
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
   })
 
   test('traceId is reused from context', async () => {
@@ -546,7 +546,7 @@ describe('Router', () => {
       '/route',
       'POST'
     )
-    expect(result.response.headers['X-Correlation-Id']).toBe(traceId)
+    expect(result.response.headers!['X-Correlation-Id']).toBe(traceId)
   })
 
   test('context getters work inside routes', async () => {
