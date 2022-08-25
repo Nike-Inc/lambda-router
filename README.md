@@ -40,6 +40,57 @@ async function handler (lambdaEvent, context) {
 }
 ```
 
+## Typescript Quickstart
+```ts
+// ----- app module -----
+// Put these app-wide types in a module you can share with all the request handlers
+// If you are using a DI kit, it should go there
+// Since that's where your AppContext will be defined
+import type {
+  APIGatewayProxyEventV2,
+  Context as LambdaContext,
+} from 'aws-lambda';
+import type {
+  RouterEvent,
+  RouterContext,
+  BodyResponse,
+  CustomResponse,
+} from 'lambda-router';
+
+
+export interface Context extends LambdaContext {
+  /* your custom request context data */
+}
+export type AppContext = RouterContext<Context>;
+export type AppEvent = RouterEvent<APIGatewayProxyEventV2>;
+export type RouteResponse = BodyResponse | CustomResponse;
+// ----- end app module -----
+
+// ----- request handler -----
+type MyRouteEvent = AppEvent & {
+  // You can define all requets elements here
+  // including headers, querystrings, and pathParameters
+  body: {
+    name: string;
+    age: number;
+  };
+};
+
+export const routes = {
+  echo: async (
+    event: MyRouteEvent,
+    { response }: AppContext,
+  ): Promise<RouteResponse> => {
+    // This is strongly typed
+    const { name, age } = event.body;
+
+    // This is also strongly typed
+    return response({ statusCode: 200, body: { name, age } });
+  },
+};
+
+```
+
 # API
 
 ```javascript
