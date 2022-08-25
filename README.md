@@ -40,11 +40,85 @@ async function handler (lambdaEvent, context) {
 }
 ```
 
+## Typescript Quickstart
+```ts
+// ----- app module -----
+// Put these app-wide types in a module you can share with all the request handlers
+// If you are using a DI kit, it should go there
+// Since that's where your AppContext will be defined
+import type {
+  APIGatewayProxyEventV2,
+  Context as LambdaContext,
+} from 'aws-lambda';
+import { Router } from 'lambda-router'
+import type {
+  RouterEvent,
+  RouterContext,
+  BodyResponse,
+  CustomResponse,
+} from 'lambda-router';
+
+
+export interface Context extends LambdaContext {
+  /* your custom request context data */
+}
+export type AppContext = RouterContext<Context>;
+export type AppEvent = RouterEvent<APIGatewayProxyEventV2>;
+export type RouteResponse = BodyResponse | CustomResponse;
+
+export function initContext(event: APIGatewayProxyEventV2): Context {
+  /* implement */
+}
+// ----- end app module -----
+
+// ----- lambda handler module -----
+const router = Router({});
+
+async function handler(
+  event: APIGatewayProxyEventV2,
+  context: Context,
+): Promise<APIGatewayProxyResult> {
+  const appContext = initContext(event);
+
+  const { response } = await router.route(event, appContext);
+
+  return response;
+}
+
+// ----- end lambda handler module -----
+
+// ----- request handler -----
+type MyRouteEvent = AppEvent & {
+  // You can define all requets elements here
+  // including headers, querystrings, and pathParameters
+  body: {
+    name: string;
+    age: number;
+  };
+};
+
+export const routes = {
+  echo: async (
+    event: MyRouteEvent,
+    { response }: AppContext,
+  ): Promise<RouteResponse> => {
+    // This is strongly typed
+    const { name, age } = event.body;
+
+    // This is also strongly typed
+    return response({ statusCode: 200, body: { name, age } });
+  },
+};
+
+```
+
 # API
 
 ```javascript
 function Router ({
   logger, // logger-wrapper
+  assumeJson = false, // assume content-type:application/json if not content-type header is provided
+  trimTrailingSlash = true, // match on paths that end with slash, e.g. "/path" matches "path/"
   extractPathParameters = true, // merge proxy path parameters into event.pathParameters
   includeTraceId = true, // include TraceId header
   inluceErrorStack = false, // include stack traces with error responses
@@ -115,7 +189,11 @@ router.post('/v1/endpoint', service.create)
 router.get('/v1/endpoint/{id}', service.get)
 ```
 
-# Custom Response
+# Context
+
+The `router.route` function takes an `event` and a `context`. The `context` is useful to provide application data to the routes. It is important to know that this value must be an object, as the `route` function **mutates it** in order to provide the functionality below.
+
+## Custom Response
 
 The `context` object, the second parameter to route handlers, has a `response` property function. It can be used to provide custom status codes, custom headers, and control body serialization.
 
@@ -132,7 +210,7 @@ async function download({ headers }, { path, response })
   return response(201, file, { 'Content-Type': 'application/octet-stream' })
 ```
 
-# Custom Headers
+## Custom Headers
 
 Fully-custom responses are sometimes undesirable, as they avoid some of the automatic behavior of normal respones (such as error formatting). If your only goal is to set a custom response header you can use `response.setHeader`
 

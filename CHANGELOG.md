@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [3.0.0] - Unreleased
+### Added
+- Support for `APIGatewayProxyEventV2`
+- Parse as json when `content-type: application/merge-patch+json`
+### Changed
+- Converted project to TypeScript
+- **Breaking Change**: `trimTrailingSlash` defaults to `true`
+- **Breaking Change**: `normalizeHeaders` defaults to `true`
+- **Breaking Change**: `context.response` now takes an _options_ object as its only parameter
+- Downgraded Jest to v26 in order to handle [this issue](https://github.com/facebook/jest/issues/12838)
+### Removed
+- **Breaking Change**: Support for Node < 14
 
 ## [2.12.0] - 2021-08-07
 ### Added
