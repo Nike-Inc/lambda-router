@@ -50,6 +50,7 @@ import type {
   APIGatewayProxyEventV2,
   Context as LambdaContext,
 } from 'aws-lambda';
+import { Router } from 'lambda-router'
 import type {
   RouterEvent,
   RouterContext,
@@ -64,7 +65,27 @@ export interface Context extends LambdaContext {
 export type AppContext = RouterContext<Context>;
 export type AppEvent = RouterEvent<APIGatewayProxyEventV2>;
 export type RouteResponse = BodyResponse | CustomResponse;
+
+export function initContext(event: APIGatewayProxyEventV2): Context {
+  /* implement */
+}
 // ----- end app module -----
+
+// ----- lambda handler module -----
+const router = Router({});
+
+async function handler(
+  event: APIGatewayProxyEventV2,
+  context: Context,
+): Promise<APIGatewayProxyResult> {
+  const appContext = initContext(event);
+
+  const { response } = await router.route(event, appContext);
+
+  return response;
+}
+
+// ----- end lambda handler module -----
 
 // ----- request handler -----
 type MyRouteEvent = AppEvent & {
